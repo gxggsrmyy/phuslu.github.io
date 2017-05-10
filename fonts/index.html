@@ -1,20 +1,6 @@
-#!/usr/bin/env python
-# coding:utf-8
-
-import sys
-import os
-import time
-import math
-import re
-import posixpath
-
-sys.dont_write_bytecode = True
-
-import mistune
-
-TEMPLATE = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <meta charset="utf-8">
-<title>Index of {{ CURRENT_FOLDER }}</title>
+<title>Index of /fonts</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta property="generator" content="phuslu">
@@ -80,121 +66,23 @@ padding-right: 13px;
 
 <div class="container">
 <table class="table table-striped table-bordered table-hover table-condensed">
-  <tr><th colspan="3">Index of {{ CURRENT_FOLDER }}</th></tr>
+  <tr><th colspan="3">Index of /fonts</th></tr>
 </table>
 
 <table class="table table-striped table-bordered table-hover table-condensed">
 <tr><td><a href="../" class="octicon-reply">..</a></td><td></td><td>-</td></tr>
-{{ FILE_LIST_HTML }}
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/Consolas.ttf" class="octicon-file"  rel="noreferrer">Consolas.ttf</a></td><td>10-May-2017 13:08</td><td>13</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/DejaVuSansMono.ttf" class="octicon-file"  rel="noreferrer">DejaVuSansMono.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/Menlo-Regular.ttf" class="octicon-file"  rel="noreferrer">Menlo-Regular.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/SourceCodePro-Regular.ttf" class="octicon-file"  rel="noreferrer">SourceCodePro-Regular.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/UbuntuMono-B.ttf" class="octicon-file"  rel="noreferrer">UbuntuMono-B.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/UbuntuMono-BI.ttf" class="octicon-file"  rel="noreferrer">UbuntuMono-BI.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/UbuntuMono-R.ttf" class="octicon-file"  rel="noreferrer">UbuntuMono-R.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/UbuntuMono-RI.ttf" class="octicon-file"  rel="noreferrer">UbuntuMono-RI.ttf</a></td><td>10-May-2017 13:08</td><td>131</td></tr>
+<tr><td><a href="https://media.githubusercontent.com/media/phuslu/phuslu.github.io/master/fonts/monaco.ttf" class="octicon-file"  rel="noreferrer">monaco.ttf</a></td><td>10-May-2017 13:08</td><td>13</td></tr>
+
 </table>
 
-{{ README_HTML }}
+
 
 </div>
-'''
-
-README_TEMPLATE = '''
-<table class="table table-striped table-bordered table-hover table-condensed">
-  <tr><th colspan="3">{{ README_FILENAME }}</th></tr>
-  <tr><td colspan="3">
-    <div id="readme" class="markdown-body">{{ README_MARKDOWN }}</div>
-  </td></tr>
-</table>
-
-<link href="https://cdn.bootcss.com/github-markdown-css/2.6.0/github-markdown.min.css" rel="stylesheet">
-<style>
-.markdown-body {
-  float: left;
-  font-family: "ubuntu", "Tahoma", "Microsoft YaHei", arial,sans-serif;
-}
-</style>
-'''
-
-def render(template, vars):
-    return re.sub(r'(?is){{ (\w+) }}', lambda m: str(vars.get(m.group(1), '')), template)
-
-def getmtime(filename, use_git=False):
-    timestamp = 0
-    if use_git:
-        timestamp = os.popen("git log -1 --format='%%ct' '%s'" % filename).read()
-    if not timestamp:
-        timestamp = os.path.getmtime(filename)
-    return float(timestamp)
-
-
-def human_filesize(size):
-    assert isinstance(size, (int, long))
-    size = float(size)
-    base = 1024
-    for x in 'BKMGTP':
-        if -base < size < base:
-            break
-        size /= base
-    a = re.sub(r'0+$', '', str(size)[:3]).rstrip('.')
-    b = '' if x == 'B' else x
-    return a + b
-
-
-def main():
-    target_dir = posixpath.normpath(posixpath.join('/', sys.argv[1]))
-    os.chdir(sys.argv[1])
-    if os.path.exists('index.html'):
-        with open('index.html', 'rb') as fp:
-            text = fp.read()
-        if '<meta property="generator" content="phuslu">' not in text:
-            print(os.getcwd() + '/index.html already exists, abort')
-            return
-    names = os.listdir('.')
-    names = sorted(names, key=lambda x:(-os.path.isdir(x), x))
-    git_dir = os.popen('git rev-parse --show-toplevel 2>/dev/null').read().strip()
-    use_git = bool(git_dir)
-    if use_git:
-        github_user, github_repo = os.popen("git remote -v | awk '{print $2;exit}'").read().split('/')[-2:]
-        github_repo = github_repo.strip().rstrip('.git')
-        lfs_files = [x.split(None, 2)[-1].strip() for x in os.popen("git lfs ls-files").read().strip().splitlines()]
-    CURRENT_FOLDER = target_dir
-    FILE_LIST_HTML = ''
-    README_FILENAME = ''
-    for name in names:
-        fullname = os.path.join(target_dir, name).strip('/')
-        if name.startswith('.') or name == 'index.html':
-            continue
-        if name.lower() == 'readme.md':
-            README_FILENAME = name
-        is_url = name.endswith('.url')
-        is_media = name.endswith(('jpg','png','bmp','gif','ico','webp','flv','mp4','mkv','avi','mkv'))
-        is_dir = os.path.isdir(name)
-        fsize = human_filesize(os.path.getsize(name)) if not is_dir else '-'
-        mtime = time.strftime('%d-%b-%Y %H:%M', time.gmtime(getmtime(name, use_git=use_git)+8*3600))
-        display_name = name
-        if is_dir:
-            link = name + '/'
-            link_class = 'octicon-file-directory'
-        elif is_url:
-            link = re.search(r'(?i)url\s*=\s*(\S+)', open(name, 'rb').read()).group(1)
-            link_class = 'octicon-bookmark'
-            display_name = os.path.splitext(display_name)[0]
-        elif use_git:
-            if fullname in lfs_files:
-                link = 'https://media.githubusercontent.com/media/%s/%s/master/%s' % (github_user, github_repo, fullname)
-            else:
-                link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
-            link_class = 'octicon-file-media' if is_media else 'octicon-file'
-        else:
-            link = name
-            link_class = 'octicon-file-media' if is_media else 'octicon-file'
-        link_target = 'target="_blank"' if is_url else ''
-        link_postfix = '<span class="external"/>' if is_url else ''
-        FILE_LIST_HTML += render('<tr><td><a href="{{ link }}" class="{{ link_class }}" {{ link_target }} rel="noreferrer">{{ display_name }}</a>{{ link_postfix }}</td><td>{{ mtime }}</td><td>{{ fsize }}</td></tr>\n''', locals())
-    README_HTML = ''
-    if README_FILENAME:
-        README_MARKDOWN = mistune.markdown(open(README_FILENAME, 'rb').read())
-        README_HTML = render(README_TEMPLATE, locals())
-    html = render(TEMPLATE, locals())
-    with open('index.html', 'wb') as fp:
-        fp.write(html)
-
-
-if __name__ == '__main__':
-    main()
-
