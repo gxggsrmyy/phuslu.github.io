@@ -173,10 +173,12 @@ def main():
         elif is_url:
             link = re.search(r'(?i)url\s*=\s*(\S+)', open(name, 'rb').read()).group(1)
             link_class = 'octicon-bookmark'
+            fsize = '-'
             display_name = os.path.splitext(display_name)[0]
         elif use_git:
             if fullname in lfs_files:
                 link = 'https://media.githubusercontent.com/media/%s/%s/master/%s' % (github_user, github_repo, fullname)
+                fsize = '-'
             else:
                 link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
             link_class = 'octicon-file-media' if is_media else 'octicon-file'
