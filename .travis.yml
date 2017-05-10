@@ -9,3 +9,8 @@ script:
 branches:
   only:
     - master
+
+addons:
+  apt:
+    packages:
+      - p7zip-full
