@@ -73,27 +73,27 @@ def cx_ddns(api_key, api_secret, domain, ip=''):
     api_url = 'https://www.cloudxns.net/api2/ddns'
     data = json.dumps({'domain': domain, 'ip': ip, 'line_id': '1'})
     date = email.utils.formatdate()
-    api_hmac = hashlib.md5(''.join((api_key, api_url, data, date, api_secret))).hexdigest()
+    api_hmac = hashlib.md5(''.join((api_key, api_url, data, date, api_secret)).encode()).hexdigest()
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
-    resp = urlopen(Request(api_url, data=data, headers=headers))
+    resp = urlopen(Request(api_url, data=data.encode(), headers=headers))
     logging.info('cx_ddns domain=%r to ip=%r result: %s', domain, ip, resp.read())
 
 
 def cx_update(api_key, api_secret, domain_id, host, ip):
     api_url = 'https://www.cloudxns.net/api2/record/{}'.format(domain_id)
     date = email.utils.formatdate()
-    api_hmac = hashlib.md5(''.join((api_key, api_url, date, api_secret))).hexdigest()
+    api_hmac = hashlib.md5(''.join((api_key, api_url, date, api_secret)).encode()).hexdigest()
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
     resp = urlopen(Request(api_url, data=None, headers=headers))
-    data = json.loads(resp.read())['data']
-    record_id = int((x['record_id'] for x in data if x['type']==('AAAA' if ':' in ip else 'A') and x['host']==host).next())
+    data = json.loads(resp.read().decode())['data']
+    record_id = int(next(x['record_id'] for x in data if x['type']==('AAAA' if ':' in ip else 'A') and x['host']==host))
     logging.info('cx_update query domain_id=%r host=%r to record_id: %r', domain_id, host, record_id)
     api_url = 'https://www.cloudxns.net/api2/record/{}'.format(record_id)
     data = json.dumps({'domain_id': domain_id, 'host': host, 'value': ip})
     date = email.utils.formatdate()
-    api_hmac = hashlib.md5(''.join((api_key, api_url, data, date, api_secret))).hexdigest()
+    api_hmac = hashlib.md5(''.join((api_key, api_url, data, date, api_secret)).encode()).hexdigest()
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
-    request = Request(api_url, data=data, headers=headers)
+    request = Request(api_url, data=data.encode(), headers=headers)
     request.get_method = lambda: 'PUT'
     resp = urlopen(request)
     logging.info('cx_update update domain_id=%r host=%r ip=%r result: %r', domain_id, host, ip, resp.read())
