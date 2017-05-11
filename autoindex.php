@@ -80,19 +80,19 @@ foreach ($files as $file)
   $item['display_name'] = htmlspecialchars($file);
   $item['mtime'] = date("d-M-Y H:i", filemtime($file));
   $item['size'] = $is_dir?'-':human_filesize(filesize($file));
-  $item['class'] = $is_dir?'octicon-file-directory':'octicon-file';
+  $item['class'] = $is_dir?'octicon file-directory':'octicon file';
 
   if (preg_match('/\.url$/', $file))
   {
     $ini_array = parse_ini_file($file, true);
     $item['link'] = $ini_array['InternetShortcut']['URL'];
     $item['display_name'] = preg_replace('/\.url$/', '', $file);
-    $item['class'] = 'octicon-bookmark';
+    $item['class'] = 'octicon bookmark';
     $item['is_url'] = true;
   }
   else if (preg_match('/\.(jpg|png|bmp|gif|ico|webp|flv|mp4|mkv|avi|mkv)$/', $file))
   {
-    $item['class'] = 'octicon-file-media';
+    $item['class'] = 'octicon file-media';
   }
   
 
@@ -140,55 +140,45 @@ body {
 </style>
 
 <style>
-.octicon-reply {
+.octicon {
 background-position: center left;
 background-repeat: no-repeat;
+padding-left: 16px;
+}
+.reply {
 <?php if ($is_webkit): ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='14px' height='16px' viewBox='0 0 14 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M6,3.5 C9.92,3.94 14,6.625 14,13.5 C11.688,8.438 9.25,7.5 6,7.5 L6,11 L0.5,5.5 L6,0 L6,3.5 Z' fill='#7D94AE' /></svg>");
-padding-left: 16px;
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAeFBMVEUAAACAgIBVqqqAgL+AkraAj697lbB8lrF7k6x+la1+lK5+la59k659la19la58la19lK58la99lK59lK1+la5+lK19k659la1+lK5+lK99lK19k659lK59lK59la99lK5+lK5+lK1+lK59lK59lK59lK59lK7///+yznbQAAAAJnRSTlMAAgMEDhAdJzRBX2Voanh9fn+Bg4SGh4mKjJmhp7q7v8HFydjx/b/b+a0AAAABYktHRCctD6gjAAAAXElEQVQIHX3BRxLCMAAAsSWE3nsn1P3/E7E9ZHAuSCRTcjvJ7JWfmTru8zU3eQ5bBANrl5Jgae3WJliph9P9rQuitQK9yleHaCNBcXREsiUqrmdy3QcNExpK/voA8ZEItj9lCn0AAAAASUVORK5CYII=");
 <?php endif ?>
 }
-.octicon-file {
-background-position: center left;
-background-repeat: no-repeat;
+.file {
 <?php if ($is_webkit): ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='12px' height='16px' viewBox='0 0 12 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M6,5 L2,5 L2,4 L6,4 L6,5 L6,5 Z M2,8 L9,8 L9,7 L2,7 L2,8 L2,8 Z M2,10 L9,10 L9,9 L2,9 L2,10 L2,10 Z M2,12 L9,12 L9,11 L2,11 L2,12 L2,12 Z M12,4.5 L12,14 C12,14.55 11.55,15 11,15 L1,15 C0.45,15 0,14.55 0,14 L0,2 C0,1.45 0.45,1 1,1 L8.5,1 L12,4.5 L12,4.5 Z M11,5 L8,2 L1,2 L1,14 L11,14 L11,5 L11,5 Z' fill='#7D94AE' /></svg>");
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQBAMAAADQT4M0AAAALVBMVEUAAACAkq2AkaqAlbF+k61+lK59lK5+lK5+lK59lK19lK59lK59lK59lK7///94FNP0AAAADXRSTlMAHB4kgIi/wcPb3N/iJ7nCaQAAAAFiS0dEDm+9ME8AAAA2SURBVAjXY2CAgNy7d+9OZGC4AGRGKYAplsMMF+7eZWCIBvMYeOEUUOUF4ngQqhcoePc61B4A1WogLkcr910AAAAASUVORK5CYII=");
 <?php endif ?>
-padding-left: 16px;
 }
-.octicon-file-media {
-background-position: center left;
-background-repeat: no-repeat;
+.file-media {
 <?php if ($is_webkit): ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='12px' height='16px' viewBox='0 0 12 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M6,5 L8,5 L8,7 L6,7 L6,5 L6,5 Z M12,4.5 L12,14 C12,14.55 11.55,15 11,15 L1,15 C0.45,15 0,14.55 0,14 L0,2 C0,1.45 0.45,1 1,1 L8.5,1 L12,4.5 L12,4.5 Z M11,5 L8,2 L1,2 L1,13 L4,8 L6,12 L8,10 L11,13 L11,5 L11,5 Z' fill='#7D94AE' /></svg>");
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQCAMAAAAVv241AAAASFBMVEUAAACAmbOAkq2AkaqAlbGAlK59k618la58lK58k65+k61+lK59lK59lK5+lK5+lK59lK19lK59lK59lK99lK59lK59lK7////0+4niAAAAFnRSTlMAChweJCY7SHd7gIizv8HD29zf4eL43qOWEgAAAAFiS0dEFwvWmI8AAABOSURBVAgdVcEHEkAwAADB0wnR3f+fatRhl5/oZUwBubRTBnILa4482hk5KCByUEDkJUJVchJJlshJpNGSugax2DQGDYidtyB+MPjq+doBOD4G5atFHdAAAAAASUVORK5CYII=");
 <?php endif ?>
-padding-left: 16px;
 }
-.octicon-file-directory {
-background-position: center left;
-background-repeat: no-repeat;
+.file-directory {
 <?php if ($is_webkit): ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='14px' height='16px' viewBox='0 0 14 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M13,4 L7,4 L7,3 C7,2.34 6.69,2 6,2 L1,2 C0.45,2 0,2.45 0,3 L0,13 C0,13.55 0.45,14 1,14 L13,14 C13.55,14 14,13.55 14,13 L14,5 C14,4.45 13.55,4 13,4 L13,4 Z M6,4 L1,4 L1,3 L6,3 L6,4 L6,4 Z' fill='#7D94AE' /></svg>");
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAYAAAAmlE46AAAABmJLR0QA/wD/AP+gvaeTAAAATElEQVQokWNgoDdgrJ2ybj8DA4MDFrlrzTlB2jh11k5Z958UcWQb8SrAAfYxkaGJgYGBwYlcjQyjGmmikZGB4QipmhgZGA6RayH5AACLIg/XosT5EgAAAABJRU5ErkJggg==");
 <?php endif ?>
-padding-left: 16px;
 }
-.octicon-bookmark {
-background-position: center left;
-background-repeat: no-repeat;
+.bookmark {
 <?php if ($is_webkit): ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='10px' height='16px' viewBox='0 0 10 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M9,0 L1,0 C0.27,0 0,0.27 0,1 L0,16 L5,12.91 L10,16 L10,1 C10,0.27 9.73,0 9,0 L9,0 Z M8.22,4.25 L6.36,5.61 L7.08,7.77 C7.14,7.99 7.06,8.05 6.88,7.94 L5,6.6 L3.12,7.94 C2.93,8.05 2.87,7.99 2.92,7.77 L3.64,5.61 L1.78,4.25 C1.61,4.09 1.64,4.02 1.87,4.02 L4.17,3.99 L4.87,1.83 L5.12,1.83 L5.82,3.99 L8.12,4.02 C8.35,4.02 8.39,4.1 8.21,4.25 L8.22,4.25 Z' id='Shape' fill='#7D94AE' /></svg>");
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAQCAMAAAAYoR5yAAAAYFBMVEUAAACAgICAlap6ma19kq59krB7lK18la5+k65+la99k69+lK19la59lK99la58k659la59lK19lK59lK19lK59lK59lK59lK59lK59lK59lK59lK59lK59lK59lK7///9ZwL50AAAAHnRSTlMAAhgZLz0+UlVZXF1eZqOmqsjZ2+rs7fH3+Pn6+/1Z+ItmAAAAAWJLR0QfBQ0QvQAAAFFJREFUCB0FwYUBwgAAwLAOZ7h7/j+TpAvAOXi+INgfIFiuILd51eIuvpvafgnryWSNeI/X6/ghAAIgAAIg+P0gnGazE/LYDTXsHjpOq2p6/ANPqw6TnVNdgQAAAABJRU5ErkJggg==");
 <?php endif ?>
-padding-left: 16px;
 }
 .external {
 background-position: center right;
@@ -222,7 +212,7 @@ padding-right: 13px;
     </td>
   </tr>
   <tr>
-    <td><a href="../" class="octicon-reply" >..</a></td>
+    <td><a href="../" class="octicon reply" >..</a></td>
     <td></td>
     <td>-</td>
   </tr>
