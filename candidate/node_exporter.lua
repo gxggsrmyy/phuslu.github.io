@@ -6,8 +6,6 @@
 -- TODO: /proc/diskstats /proc/block/sd[X]/size /sys/class/hwmon/
 -- TODO: process_cpu_seconds_total/process_max_fds/process_open_fds/process_resident_memory_bytes/process_start_time_seconds/process_virtual_memory_bytes
 
-debug = os.getenv('DEBUG') ~= nil
-
 function dump(o)
   if type(o) == 'table' then
     local s = '{ '
@@ -53,32 +51,22 @@ function read_file(filename)
   return contents
 end
 
-function print_metric_type(metric, mtype)
+function print_metric_type(s, metric, mtype)
   this_metric = metric
-  if debug then
-    print("# TYPE " .. metric .. " " .. mtype)
-  else
-    client:send("# TYPE " .. metric .. " " .. mtype .. "\n")
-  end
+  s = s .. "# TYPE " .. metric .. " " .. mtype .. "\n"
+  return s
 end
 
-function print_metric(labels, value)
+function print_metric(s, labels, value)
   if labels then
-    if debug then
-      print(string.format("%s{%s} %g", this_metric, labels, value))
-    else
-      client:send(string.format("%s{%s} %g\n", this_metric, labels, value))
-    end
+    s = s .. string.format("%s{%s} %g\n", this_metric, labels, value)
   else
-    if debug then
-      print(string.format("%s %g", this_metric, value))
-    else
-      client:send(string.format("%s %g\n", this_metric, value))
-    end
+    s = s .. string.format("%s %g\n", this_metric, value)
   end
+  return s
 end
 
-function print_uname()
+function print_uname(s)
   local domainname = "(none)"
   local machine = "unknown"
   local nodename = rtrim(read_file("/proc/sys/kernel/hostname"))
@@ -90,61 +78,72 @@ function print_uname()
                              domainname, machine, nodename,
                              release, sysname, version)
 
-  print_metric_type("node_uname_info", "gauge")
-  print_metric(uname_info, 1)
+  s = print_metric_type(s, "node_uname_info", "gauge")
+  s = print_metric(s, uname_info, 1)
+
+  return s
 end
 
-function print_time()
-  print_metric_type("node_time", "counter")
-  print_metric(nil, os.time())
+function print_time(s)
+  s = print_metric_type(s, "node_time", "counter")
+  s = print_metric(s, nil, os.time())
+  return s
 end
 
-function print_loadavg()
+function print_loadavg(s)
   local loadavg = split(read_file("/proc/loadavg"))
 
-  print_metric_type("node_load1", "gauge")
-  print_metric(nil, loadavg[1])
-  print_metric_type("node_load15", "gauge")
-  print_metric(nil, loadavg[3])
-  print_metric_type("node_load5", "gauge")
-  print_metric(nil, loadavg[2])
+  s = print_metric_type(s, "node_load1", "gauge")
+  s = print_metric(s, nil, loadavg[1])
+  s = print_metric_type(s, "node_load15", "gauge")
+  s = print_metric(s, nil, loadavg[3])
+  s = print_metric_type(s, "node_load5", "gauge")
+  s = print_metric(s, nil, loadavg[2])
+
+  return s
 end
 
-function print_filefd()
+function print_filefd(s)
   local file_nr = split(read_file("/proc/sys/fs/file-nr"))
 
-  print_metric_type("node_filefd_allocated", "gauge")
-  print_metric(nil, file_nr[1])
-  print_metric_type("node_filefd_maximum", "gauge")
-  print_metric(nil, file_nr[3])
+  s = print_metric_type(s, "node_filefd_allocated", "gauge")
+  s = print_metric(s, nil, file_nr[1])
+  s = print_metric_type(s, "node_filefd_maximum", "gauge")
+  s = print_metric(s, nil, file_nr[3])
+
+  return s
 end
 
-function print_nf_conntrack()
+function print_nf_conntrack(s)
   local nf_conntrack_count = rtrim(read_file("/proc/sys/net/netfilter/nf_conntrack_count"))
   local nf_conntrack_max = rtrim(read_file("/proc/sys/net/netfilter/nf_conntrack_max"))
 
-  print_metric_type("node_nf_conntrack_entries", "gauge")
-  print_metric(nil, nf_conntrack_count)
-  print_metric_type("node_nf_conntrack_entries_limit", "gauge")
-  print_metric(nil, nf_conntrack_max)
+  s = print_metric_type(s, "node_nf_conntrack_entries", "gauge")
+  s = print_metric(s, nil, nf_conntrack_count)
+  s = print_metric_type(s, "node_nf_conntrack_entries_limit", "gauge")
+  s = print_metric(s, nil, nf_conntrack_max)
+
+  return s
 end
 
-function print_memory()
+function print_memory(s)
   local meminfo = splitlines(read_file(
                     "/proc/meminfo"):gsub("[):]", ""):gsub("[(]", "_"))
 
   for i, mi in ipairs(meminfo) do
     local mia = split(mi)
-    print_metric_type("node_memory_" .. mia[1], "gauge")
+    print_metric_type(s, "node_memory_" .. mia[1], "gauge")
     if #mia == 3 then
-      print_metric(nil, mia[2] * 1024)
+      s= print_metric(s, nil, mia[2] * 1024)
     else
-      print_metric(nil, mia[2])
+      s = print_metric(s, nil, mia[2])
     end
   end
+
+  return s
 end
 
-function print_netstat()
+function print_netstat(s)
   local netstat = splitlines(read_file("/proc/net/netstat") .. read_file("/proc/net/snmp"))
 
   for i = 1,#netstat,2 do
@@ -153,52 +152,58 @@ function print_netstat()
     local keys = split(keystr)
     local values = split(valuestr)
     for ii, ss in ipairs(keys) do
-      print_metric_type("node_netstat_" .. prefix .. "_" .. ss, "gauge")
-      print_metric(nil, values[ii])
+      s = print_metric_type(s, "node_netstat_" .. prefix .. "_" .. ss, "gauge")
+      s = print_metric(s, nil, values[ii])
     end
   end
+
+  return s
 end
 
-function print_vmstat()
+function print_vmstat(s)
   local vmstat = splitlines(read_file("/proc/vmstat"))
 
   for i, vm in ipairs(vmstat) do
     local vma = split(vm)
-    print_metric_type("node_vmstat_" .. vma[1], "gauge")
-    print_metric(nil, vma[2])
+    s = print_metric_type(s, "node_vmstat_" .. vma[1], "gauge")
+    s = print_metric(s, nil, vma[2])
   end
+
+  return s
 end
 
-function print_stat()
+function print_stat(s)
   local cpu_mode = {"user", "nice", "system", "idle", "iowait", "irq",
                     "softirq", "steal", "guest", "guest_nice"}
   local stat = read_file("/proc/stat")
 
-  print_metric_type("node_boot_time", "gauge")
-  print_metric(nil, string.match(stat, "btime ([0-9]+)"))
-  print_metric_type("node_context_switches", "counter")
-  print_metric(nil, string.match(stat, "ctxt ([0-9]+)"))
-  print_metric_type("node_cpu", "counter")
+  s = print_metric_type(s, "node_boot_time", "gauge")
+  s = print_metric(s, nil, string.match(stat, "btime ([0-9]+)"))
+  s = print_metric_type(s, "node_context_switches", "counter")
+  s = print_metric(s, nil, string.match(stat, "ctxt ([0-9]+)"))
+  s = print_metric_type(s, "node_cpu", "counter")
   local i = 0
   while string.match(stat, string.format("cpu%d ", i)) do
     cpu = split(string.match(stat, string.format("cpu%d ([0-9 ]+)", i)))
     local label = string.format('cpu="cpu%d",mode="%%s"', i)
     for ii, value in ipairs(cpu) do
-      print_metric(string.format(label, cpu_mode[ii]), value / 100)
+      s = print_metric(s, string.format(label, cpu_mode[ii]), value / 100)
     end
     i = i + 1
   end
-  print_metric_type("node_forks", "counter")
-  print_metric(nil, string.match(stat, "processes ([0-9]+)"))
-  print_metric_type("node_intr", "counter")
-  print_metric(nil, string.match(stat, "intr ([0-9]+)"))
-  print_metric_type("node_procs_blocked", "gauge")
-  print_metric(nil, string.match(stat, "procs_blocked ([0-9]+)"))
-  print_metric_type("node_procs_running", "gauge")
-  print_metric(nil, string.match(stat, "procs_running ([0-9]+)"))
+  s = print_metric_type(s, "node_forks", "counter")
+  s = print_metric(s, nil, string.match(stat, "processes ([0-9]+)"))
+  s = print_metric_type(s, "node_intr", "counter")
+  s = print_metric(s, nil, string.match(stat, "intr ([0-9]+)"))
+  s = print_metric_type(s, "node_procs_blocked", "gauge")
+  s = print_metric(s, nil, string.match(stat, "procs_blocked ([0-9]+)"))
+  s = print_metric_type(s, "node_procs_running", "gauge")
+  s = print_metric(s, nil, string.match(stat, "procs_running ([0-9]+)"))
+
+  return s
 end
 
-function print_netdev()
+function print_netdev(s)
   local netdevstat = splitlines(read_file("/proc/net/dev"))
   local faces = split(netdevstat[2]:gsub('|', ' '))
   table.remove(faces, 1)
@@ -215,47 +220,31 @@ function print_netdev()
 
   for i = 1, #statss[1] do
     local inter = 2*i <= #statss[1] and 'receive' or 'transmit'
-    print_metric_type('node_network_' .. inter .. '_' .. faces[i], "gauge")
+    s = print_metric_type(s, 'node_network_' .. inter .. '_' .. faces[i], "gauge")
     for ii, value in ipairs(devices) do
-      print_metric('device="' .. value .. '"', statss[ii][i])
+      s = print_metric(s, 'device="' .. value .. '"', statss[ii][i])
     end
   end
+
+  return s
 end
 
-function print_all()
-  print_uname()
-  print_time()
-  print_stat()
-  print_vmstat()
-  print_loadavg()
-  print_memory()
-  print_filefd()
-  print_nf_conntrack()
-  print_netdev()
-  print_netstat()
+function print_all(s)
+  s = print_uname(s)
+  s = print_time(s)
+  s = print_stat(s)
+  s = print_vmstat(s)
+  s = print_loadavg(s)
+  s = print_memory(s)
+  s = print_filefd(s)
+  s = print_nf_conntrack(s)
+  s = print_netdev(s)
+  s = print_netstat(s)
+  return s
 end
 
-function serve(request)
-  if not string.match(request, "GET /metrics.*") then
-    client:send("HTTP/1.1 404 Not Found\r\n" ..
-                "Server: lua-metrics\r\n" ..
-                "Content-Type: text/plain\r\n" ..
-                "\r\n" ..
-                "404 Not Found")
-  else
-    client:send("HTTP/1.1 200 OK\r\n" ..
-                "Server: lua-metrics\r\n" ..
-                "Content-Type: text/plain\r\n" ..
-                "\r\n")
-    print_all()
-  end
-
-  client:close()
-  return true
-end
-
-if debug then
-  print_all()
+if os.getenv('DEBUG') ~= nil then
+  print(print_all(''))
   os.exit()
 end
 
@@ -265,14 +254,24 @@ socket = require("socket")
 server = assert(socket.bind("*", 9100))
 
 while 1 do
-  client = server:accept()
+  local client = server:accept()
   client:settimeout(60)
   local request, err = client:receive()
 
   if not err then
-    if not serve(request) then
-      break
+    if not string.match(request, "GET /metrics.*") then
+      client:send("HTTP/1.1 404 Not Found\r\n" ..
+                  "Server: lua-metrics\r\n" ..
+                  "Content-Type: text/plain\r\n" ..
+                  "\r\n" ..
+                  "404 Not Found")
+    else
+      client:send(print_all("HTTP/1.1 200 OK\r\n" ..
+                  "Server: lua-metrics\r\n" ..
+                  "Content-Type: text/plain\r\n" ..
+                  "\r\n"))
     end
+    client:close()
   end
 end
 
