@@ -253,27 +253,63 @@ if os.getenv('HTTP_HOST') ~= nil then
 end
 
 -- Main program.
-socket = require("socket")
-
-server = assert(socket.bind("*", 9100))
-
-while 1 do
-  local client = server:accept()
-  client:settimeout(60)
-  local request, err = client:receive()
-
-  if not err then
-    if not string.match(request, "GET /metrics.*") then
-      client:send("HTTP/1.1 404 Not Found\r\n" ..
-                  "Content-Type: text/plain\r\n" ..
-                  "\r\n" ..
-                  "404 Not Found")
-    else
-      client:send(print_all("HTTP/1.1 200 OK\r\n" ..
-                  "Content-Type: text/plain\r\n" ..
-                  "\r\n"))
+ok, http_server = pcall(require, 'http.server')
+if ok then
+  -- see https://github.com/daurnimator/lua-http/blob/master/examples/server_hello.lua
+  local http_headers = require('http.headers')
+  local myserver = assert(http_server.listen {
+      host = "0.0.0.0";
+      port = 9100;
+      onstream = function (myserver, stream)
+          local req_headers = assert(stream:get_headers())
+          local req_path = req_headers:get(":path")
+          local res_headers = http_headers.new()
+          if req_path ~= "/metrics" then
+              res_headers:append(":status", "404")
+              res_headers:append("content-type", "text/plain")
+              res_headers:append("server", "Metrics Server(lua-http)")
+              stream:write_headers(res_headers, false)
+              stream:write_headers("404 Not Found")
+          else
+              res_headers:append(":status", "200")
+              res_headers:append("content-type", "text/plain")
+              res_headers:append("server", "Metrics Server(lua-http)")
+              assert(stream:write_headers(res_headers, false))
+              assert(stream:write_chunk(print_all(".")))
+          end
+      end;
+      onerror = function(myserver, context, op, err, errno) -- luacheck: ignore 212
+		local msg = op .. " on " .. tostring(context) .. " failed"
+		if err then
+			msg = msg .. ": " .. tostring(err)
+		end
+		assert(io.stderr:write(msg, "\n"))
+      end;
+  })
+  assert(myserver:listen())
+  assert(myserver:loop())
+else
+  socket = require("socket")
+  server = assert(socket.bind("*", 9100))
+  while 1 do
+    local client = server:accept()
+    client:settimeout(60)
+    local request, err = client:receive()
+    if not err then
+      if not string.match(request, "GET /metrics .*") then
+        client:send("HTTP/1.1 404 Not Found\r\n" ..
+                    "Content-Type: text/plain\r\n" ..
+                    "Server: Metrics Server(lua-socket)\r\n" ..
+                    "\r\n" ..
+                    "404 Not Found")
+      else
+        client:send(print_all("HTTP/1.1 200 OK\r\n" ..
+                    "Content-Type: text/plain\r\n" ..
+                    "Server: Metrics Server(lua-socket)\r\n" ..
+                    "\r\n"))
+      end
+      client:close()
     end
-    client:close()
   end
 end
 
