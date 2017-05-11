@@ -275,7 +275,7 @@ if ok then
               res_headers:append("content-type", "text/plain")
               res_headers:append("server", "Metrics Server(lua-http)")
               assert(stream:write_headers(res_headers, false))
-              assert(stream:write_chunk(print_all(".")))
+              assert(stream:write_chunk(print_all("")))
           end
       end;
       onerror = function(myserver, context, op, err, errno) -- luacheck: ignore 212
