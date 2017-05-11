@@ -2,9 +2,10 @@
 -- Prometheus node_exporter (lua version)
 -- Apache 2.0 License
 -- Usage: 
---     cp node_exporter.lua /www/cgi-bin/metrics && chmod +x /www/cgi-bin/metrics
---     or
---     /sbin/start-stop-daemon -S -b -n node_exporter -x /usr/bin/lua -- /root/node_exporter.lua
+--     CGI Mode:
+--         cp node_exporter.lua /www/cgi-bin/metrics && chmod +x /www/cgi-bin/metrics
+--     Standalone Mode:
+--         /sbin/start-stop-daemon -S -b -n node_exporter -x /usr/bin/lua -- /root/node_exporter.lua
 --
 -- TODO:
 --     1. /proc/diskstats /proc/block/sd[X]/size /sys/class/hwmon/
@@ -247,12 +248,13 @@ function print_all(s)
   return s
 end
 
+-- CGI Mode
 if os.getenv('HTTP_HOST') ~= nil then
-  print(print_all('\n'))
+  print(print_all('Content-Type: text/plain; charset=utf-8\n\n'))
   os.exit()
 end
 
--- Main program.
+-- Standalone Mode
 ok, http_server = pcall(require, 'http.server')
 if ok then
   -- see https://github.com/daurnimator/lua-http/blob/master/examples/server_hello.lua
@@ -266,13 +268,13 @@ if ok then
           local res_headers = http_headers.new()
           if req_path ~= "/metrics" then
               res_headers:append(":status", "404")
-              res_headers:append("content-type", "text/plain")
+              res_headers:append("content-type", "text/plain; charset=utf-8")
               res_headers:append("server", "Metrics Server(lua-http)")
               stream:write_headers(res_headers, false)
               stream:write_headers("404 Not Found")
           else
               res_headers:append(":status", "200")
-              res_headers:append("content-type", "text/plain")
+              res_headers:append("content-type", "text/plain; charset=utf-8")
               res_headers:append("server", "Metrics Server(lua-http)")
               assert(stream:write_headers(res_headers, false))
               assert(stream:write_chunk(print_all("")))
@@ -289,6 +291,7 @@ if ok then
   assert(myserver:listen())
   assert(myserver:loop())
 else
+  assert(io.stderr:write("WARN: lua-http is not installed, fallback to single-thread lua-socket server\n"))
   socket = require("socket")
   server = assert(socket.bind("*", 9100))
   while 1 do
@@ -298,13 +301,13 @@ else
     if not err then
       if not string.match(request, "GET /metrics .*") then
         client:send("HTTP/1.1 404 Not Found\r\n" ..
-                    "Content-Type: text/plain\r\n" ..
+                    "Content-Type: text/plain; charset=utf-8\r\n" ..
                     "Server: Metrics Server(lua-socket)\r\n" ..
                     "\r\n" ..
                     "404 Not Found")
       else
         client:send(print_all("HTTP/1.1 200 OK\r\n" ..
-                    "Content-Type: text/plain\r\n" ..
+                    "Content-Type: text/plain; charset=utf-8\r\n" ..
                     "Server: Metrics Server(lua-socket)\r\n" ..
                     "\r\n"))
       end
