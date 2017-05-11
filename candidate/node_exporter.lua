@@ -1,10 +1,14 @@
 #!/usr/bin/lua
--- Metrics web server (0.1)
--- Copyright (c) 2015 Kevin Lyda
+-- Prometheus node_exporter (lua version)
 -- Apache 2.0 License
--- Usage: /sbin/start-stop-daemon -S -b -n node_exporter -x /usr/bin/lua -- /root/node_exporter.lua
--- TODO: /proc/diskstats /proc/block/sd[X]/size /sys/class/hwmon/
--- TODO: process_cpu_seconds_total/process_max_fds/process_open_fds/process_resident_memory_bytes/process_start_time_seconds/process_virtual_memory_bytes
+-- Usage: 
+--     cp node_exporter.lua /www/cgi-bin/metrics && chmod +x /www/cgi-bin/metrics
+--     or
+--     /sbin/start-stop-daemon -S -b -n node_exporter -x /usr/bin/lua -- /root/node_exporter.lua
+--
+-- TODO:
+--     1. /proc/diskstats /proc/block/sd[X]/size /sys/class/hwmon/
+--     2. process_cpu_seconds_total/process_max_fds/process_open_fds/process_resident_memory_bytes/process_start_time_seconds/process_virtual_memory_bytes
 
 function dump(o)
   if type(o) == 'table' then
@@ -243,8 +247,8 @@ function print_all(s)
   return s
 end
 
-if os.getenv('DEBUG') ~= nil then
-  print(print_all(''))
+if os.getenv('HTTP_HOST') ~= nil then
+  print(print_all('\n'))
   os.exit()
 end
 
@@ -261,13 +265,11 @@ while 1 do
   if not err then
     if not string.match(request, "GET /metrics.*") then
       client:send("HTTP/1.1 404 Not Found\r\n" ..
-                  "Server: lua-metrics\r\n" ..
                   "Content-Type: text/plain\r\n" ..
                   "\r\n" ..
                   "404 Not Found")
     else
       client:send(print_all("HTTP/1.1 200 OK\r\n" ..
-                  "Server: lua-metrics\r\n" ..
                   "Content-Type: text/plain\r\n" ..
                   "\r\n"))
     end
