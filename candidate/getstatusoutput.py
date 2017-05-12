@@ -1,4 +1,16 @@
-def getstatusoutput(cmd, input='', callback=None, timeout=86400*2):
+#!/usr/bin/env python
+# coding:utf-8
+
+import sys
+import os
+import re
+import time
+import logging
+import select
+import errno
+import subprocess
+
+def getstatusoutput(cmd, input='', callback=None, timeout=86400*2, **subprocess_args):
     """getstatusoutput implemented by subprocess, works with gevent/eventlet. Author: @phuslu, LICENSE: public domain"""
     timeout_at = time.time() + timeout
     interval = 0.1
@@ -12,7 +24,7 @@ def getstatusoutput(cmd, input='', callback=None, timeout=86400*2):
         except OSError as e:
             logging.exception('mktemp %r error: %r', bat, e)
             return 0x7f, str(e)
-    pipe = subprocess.Popen(bat or cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=os.name!='nt')
+    pipe = subprocess.Popen(bat or cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=os.name!='nt', **subprocess_args)
     if input:
         try:
             pipe.stdin.write(input)
@@ -29,7 +41,7 @@ def getstatusoutput(cmd, input='', callback=None, timeout=86400*2):
             else:
                 import fcntl
                 fcntl.fcntl(pipe_fd, fcntl.F_SETFL, os.O_NONBLOCK | fcntl.fcntl(pipe_fd, fcntl.F_GETFL))
-            output = ''
+            output = b''
             while time.time() < timeout_at:
                 if pipe.poll() is not None:
                     output += pipe.stdout.read()
@@ -80,3 +92,8 @@ def getstatusoutput(cmd, input='', callback=None, timeout=86400*2):
     else:
         pipe.wait()
         return pipe.returncode, pipe.stdout.read()
+
+
+if __name__ == '__main__':
+    print(getstatusoutput('ver 2>/dev/null || uname -a'))
+
