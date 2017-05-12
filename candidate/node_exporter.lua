@@ -270,8 +270,7 @@ if ok then
               res_headers:append(":status", "404")
               res_headers:append("content-type", "text/plain; charset=utf-8")
               res_headers:append("server", "Metrics Server(lua-http)")
-              stream:write_headers(res_headers, false)
-              stream:write_headers("404 Not Found")
+              stream:write_headers(res_headers, true)
           else
               res_headers:append(":status", "200")
               res_headers:append("content-type", "text/plain; charset=utf-8")
