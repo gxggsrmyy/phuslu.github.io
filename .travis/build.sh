@@ -9,9 +9,11 @@ if test -n "$MIRROR_URL" ; then
     pushd goproxy
     for FILE in goproxy_*.url
     do
+        SIZE=$(cat ${FILE} | awk -F= '/^SIZE=/{print $2;exit}')
         cat <<EOF > ${FILE}
 [InternetShortcut]
 URL=https://coding.net/u/phuslu/p/phuslu.coding.me/git/raw/master/goproxy/${FILE%.*}
+SIZE=${SIZE}
 EOF
     done
     popd
