@@ -168,7 +168,8 @@ def main():
         elif use_git:
             if fullname in lfs_files:
                 link = 'https://media.githubusercontent.com/media/%s/%s/master/%s' % (github_user, github_repo, fullname)
-                fsize = '-'
+                info = dict(x.split(None, 1) for x in open(name) if x.strip())
+                fsize = human_filesize(int(info['size'].strip())) if 'size' in info else '-'
             else:
                 link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
             link_class = 'octicon file-media' if is_media else 'octicon file'
