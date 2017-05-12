@@ -90,6 +90,10 @@ foreach ($files as $file)
     $item['class'] = 'octicon bookmark';
     $item['is_url'] = true;
   }
+  else if (preg_match('/\.(zip|7z|bz2|gz|tar|tgz|tbz2)$/', $file))
+  {
+    $item['class'] = 'octicon file-zip';
+  }
   else if (preg_match('/\.(jpg|png|bmp|gif|ico|webp|flv|mp4|mkv|avi|mkv)$/', $file))
   {
     $item['class'] = 'octicon file-media';
@@ -157,6 +161,13 @@ background-image: linear-gradient(transparent,transparent),url("data:image/png;b
 background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='12px' height='16px' viewBox='0 0 12 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M6,5 L2,5 L2,4 L6,4 L6,5 L6,5 Z M2,8 L9,8 L9,7 L2,7 L2,8 L2,8 Z M2,10 L9,10 L9,9 L2,9 L2,10 L2,10 Z M2,12 L9,12 L9,11 L2,11 L2,12 L2,12 Z M12,4.5 L12,14 C12,14.55 11.55,15 11,15 L1,15 C0.45,15 0,14.55 0,14 L0,2 C0,1.45 0.45,1 1,1 L8.5,1 L12,4.5 L12,4.5 Z M11,5 L8,2 L1,2 L1,14 L11,14 L11,5 L11,5 Z' fill='#7D94AE' /></svg>");
 <?php else: ?>
 background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQBAMAAADQT4M0AAAALVBMVEUAAACAkq2AkaqAlbF+k61+lK59lK5+lK5+lK59lK19lK59lK59lK59lK7///94FNP0AAAADXRSTlMAHB4kgIi/wcPb3N/iJ7nCaQAAAAFiS0dEDm+9ME8AAAA2SURBVAjXY2CAgNy7d+9OZGC4AGRGKYAplsMMF+7eZWCIBvMYeOEUUOUF4ngQqhcoePc61B4A1WogLkcr910AAAAASUVORK5CYII=");
+<?php endif ?>
+}
+.file-zip {
+<?php if ($is_webkit): ?>
+background-image: linear-gradient(transparent,transparent),url("data:image/svg+xml;utf8,<svg width='12px' height='16px' viewBox='0 0 12 16' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M8.5,1 L1,1 C0.44771525,1 0,1.44771525 0,2 L0,14 C0,14.5522847 0.44771525,15 1,15 L11,15 C11.5522847,15 12,14.5522847 12,14 L12,4.5 L8.5,1 Z M11,14 L1,14 L1,2 L4,2 L4,3 L5,3 L5,2 L8,2 L11,5 L11,14 L11,14 Z M5,4 L5,3 L6,3 L6,4 L5,4 L5,4 Z M4,4 L5,4 L5,5 L4,5 L4,4 L4,4 Z M5,6 L5,5 L6,5 L6,6 L5,6 L5,6 Z M4,6 L5,6 L5,7 L4,7 L4,6 L4,6 Z M5,8 L5,7 L6,7 L6,8 L5,8 L5,8 Z M4,9.28 C3.38491093,9.63510459 3.00428692,10.2897779 3,11 L3,12 L7,12 L7,11 C7,9.8954305 6.1045695,9 5,9 L5,8 L4,8 L4,9.28 L4,9.28 Z M6,10 L6,11 L4,11 L4,10 L6,10 L6,10 Z' fill='#7D94AE' /></svg>");
+<?php else: ?>
+background-image: linear-gradient(transparent,transparent),url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQCAMAAAAVv241AAAAM1BMVEUAAACAkq2Akap7lK17lK18lKx+lK59lK5+lK5+lK59lK19lK59lK59lK59lK59lK7///+xudmjAAAAD3RSTlMAHB4fPkqIv8HD29zd3+A2GAq6AAAAAWJLR0QQlbINLAAAAEFJREFUCB0FwYcBgDAAwCBcdZv/vxUAgL2quiaEMO6ZIIxnEQLjFQQSAhIEEgISa88GiYsPElWQAEgA5KyqqgMA/F0fA3rVuoUZAAAAAElFTkSuQmCC");
 <?php endif ?>
 }
 .file-media {
