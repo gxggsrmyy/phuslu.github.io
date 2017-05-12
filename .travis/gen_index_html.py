@@ -74,7 +74,7 @@ padding-right: 13px;
 </table>
 
 <table class="table table-striped table-bordered table-hover table-condensed">
-<tr><td><a href="../" class="octicon-reply">..</a></td><td></td><td>-</td></tr>
+<tr><td><a href="../" class="octicon reply">..</a></td><td></td><td>-</td></tr>
 {{ FILE_LIST_HTML }}
 </table>
 
@@ -161,9 +161,9 @@ def main():
             link = name + '/'
             link_class = 'octicon file-directory'
         elif is_url:
-            info = dict(x.split('=', 1) for x in open(name) if x.strip())
+            info = dict(x.split('=', 1) for x in open(name) if '=' in x)
             link = info['URL'].strip()
-            fsize = human_filesize(int(info['SIZE'].strip())) if 'SIZE' in info else '-'
+            fsize = human_filesize(int(info['SIZE'].strip())) if info.get('SIZE') else '-'
             link_class = 'octicon bookmark'
             display_name = os.path.splitext(display_name)[0]
         elif use_git:
