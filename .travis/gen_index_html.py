@@ -161,9 +161,10 @@ def main():
             link = name + '/'
             link_class = 'octicon file-directory'
         elif is_url:
-            link = re.search(r'(?i)url\s*=\s*(\S+)', open(name, 'rb').read()).group(1)
+            info = dict(x.split('=', 1) for x in open(name) if x.strip())
+            link = info['URL'].strip()
+            fsize = human_filesize(int(info['SIZE'].strip())) if 'SIZE' in info else '-'
             link_class = 'octicon bookmark'
-            fsize = '-'
             display_name = os.path.splitext(display_name)[0]
         elif use_git:
             if fullname in lfs_files:
