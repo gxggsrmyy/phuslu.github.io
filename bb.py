@@ -142,7 +142,7 @@ def capture(url, wait_for_text='', selector='body', viewport_size='800x450', fil
 
 def reboot_r6220(ip, password):
     request = Request('http://%s/setup.cgi?todo=debug' % ip)
-    request.add_header('Authorization', 'Basic %s' % base64.b64encode('admin:%s' % password))
+    request.add_header('Authorization', 'Basic %s' % base64.b64encode(('admin:%s' % password).encode()).decode())
     for _ in xrange(3):
         try:
             resp = urlopen(request)
