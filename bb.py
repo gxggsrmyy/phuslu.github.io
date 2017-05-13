@@ -59,7 +59,8 @@ def getip_from_3322():
 
 def f3322_ddns(username, password, hostname, ip):
     api_url = 'http://members.3322.net/dyndns/update?hostname=%s&myip=%s&wildcard=OFF&offline=NO' % (hostname, ip)
-    headers = {'Authorization': 'Basic %s' % base64.b64encode(username+':'+password)}
+    data = username + ':' + password
+    headers = {'Authorization': 'Basic %s' % base64.b64encode(data.encode()).decode()}
     resp = urlopen(Request(api_url, data=None, headers=headers))
     logging.info('f3322_ddns hostname=%r to ip=%r result: %s', hostname, ip, resp.read())
 
