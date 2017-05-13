@@ -7,6 +7,7 @@ cd ${rootdir}
 
 if test -n "$MIRROR_URL" ; then
     pushd goproxy
+    rm -rf $(ls goproxy_*.url | grep -v "$(ls -1 goproxy_*.url | sort | tail -1 | grep -o 'r[0-9][0-9][0-9][0-9]')")
     for FILE in goproxy_*.url
     do
         SIZE=$(cat ${FILE} | awk -F= '/^SIZE=/{print $2;exit}')
