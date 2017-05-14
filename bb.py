@@ -30,8 +30,6 @@ else:
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-socket.setdefaulttimeout(30)
-
 def getip(iface=''):
     if not iface:
         sock = socket.socket()
@@ -48,12 +46,12 @@ def getip(iface=''):
 
 
 def getip_from_akamai():
-    ip = urlopen('http://whatismyip.akamai.com/').read()
+    ip = urlopen('http://whatismyip.akamai.com/', timeout=5).read()
     return ip
 
 
 def getip_from_3322():
-    ip = urlopen('http://ip.3322.net/').read()
+    ip = urlopen('http://ip.3322.net/', timeout=5).read()
     return ip
 
 
@@ -61,7 +59,7 @@ def f3322_ddns(username, password, hostname, ip):
     api_url = 'http://members.3322.net/dyndns/update?hostname=%s&myip=%s&wildcard=OFF&offline=NO' % (hostname, ip)
     data = username + ':' + password
     headers = {'Authorization': 'Basic %s' % base64.b64encode(data.encode()).decode()}
-    resp = urlopen(Request(api_url, data=None, headers=headers))
+    resp = urlopen(Request(api_url, data=None, headers=headers), timeout=5)
     logging.info('f3322_ddns hostname=%r to ip=%r result: %s', hostname, ip, resp.read())
 
 
@@ -76,7 +74,7 @@ def cx_ddns(api_key, api_secret, domain, ip=''):
     date = email.utils.formatdate()
     api_hmac = hashlib.md5(''.join((api_key, api_url, data, date, api_secret)).encode()).hexdigest()
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
-    resp = urlopen(Request(api_url, data=data.encode(), headers=headers))
+    resp = urlopen(Request(api_url, data=data.encode(), headers=headers), timeout=5)
     logging.info('cx_ddns domain=%r to ip=%r result: %s', domain, ip, resp.read())
 
 
@@ -85,7 +83,7 @@ def cx_update(api_key, api_secret, domain_id, host, ip):
     date = email.utils.formatdate()
     api_hmac = hashlib.md5(''.join((api_key, api_url, date, api_secret)).encode()).hexdigest()
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
-    resp = urlopen(Request(api_url, data=None, headers=headers))
+    resp = urlopen(Request(api_url, data=None, headers=headers), timeout=5)
     data = json.loads(resp.read().decode())['data']
     record_id = int(next(x['record_id'] for x in data if x['type']==('AAAA' if ':' in ip else 'A') and x['host']==host))
     logging.info('cx_update query domain_id=%r host=%r to record_id: %r', domain_id, host, record_id)
@@ -96,7 +94,7 @@ def cx_update(api_key, api_secret, domain_id, host, ip):
     headers = {'API-KEY': api_key, 'API-REQUEST-DATE': date, 'API-HMAC': api_hmac, 'API-FORMAT': 'json'}
     request = Request(api_url, data=data.encode(), headers=headers)
     request.get_method = lambda: 'PUT'
-    resp = urlopen(request)
+    resp = urlopen(request, timeout=5)
     logging.info('cx_update update domain_id=%r host=%r ip=%r result: %r', domain_id, host, ip, resp.read())
     return
 
@@ -145,7 +143,7 @@ def reboot_r6220(ip, password):
     request.add_header('Authorization', 'Basic %s' % base64.b64encode(('admin:%s' % password).encode()).decode())
     for _ in xrange(3):
         try:
-            resp = urlopen(request)
+            resp = urlopen(request, timeout=2)
             logging.info('Enable %s debug return: %s', ip, resp.read())
             break
         except Exception as e:
