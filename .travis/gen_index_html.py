@@ -69,7 +69,7 @@ padding-right: 13px;
 }
 </style>
 
-<script>if (!/WebKit/.test(navigator.userAgent)) document.write('<link href="//phuslu.github.io/css/octicons-png.css" rel="stylesheet">');</script>
+<script>if (!/WebKit/.test(navigator.userAgent)) document.write('<link href="//phuslu.github.io/css/octicons-png.shim.css" rel="stylesheet">');</script>
 
 <div class="container">
 <table class="table table-striped table-bordered table-hover table-condensed">
