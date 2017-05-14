@@ -152,6 +152,8 @@ def main():
         fullname = os.path.join(target_dir, name).strip('/')
         if name.startswith('.') or name == 'index.html':
             continue
+        if 'nolist' in re.findall(r'[0-9a-zA-Z]+', name):
+            continue
         if name.lower() == 'readme.md':
             README_FILENAME = name
         is_url = name.endswith('.url')
