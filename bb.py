@@ -139,6 +139,9 @@ def capture(url, wait_for_text='', selector='body', viewport_size='800x450', fil
 
 
 def tcptop(pid=None):
+    if not os.environ.get('WATCHED'):
+        os.environ['WATCHED'] = '1'
+        os.execv('/usr/bin/watch', ['watch', ' '.join(sys.argv)])
     lines = os.popen('ss -ntpi').read().splitlines()
     lines.pop(0)
     info = {}
@@ -202,7 +205,7 @@ def reboot_r6220(ip, password):
 
 
 def __main():
-    applet = os.path.basename(sys.argv.pop(0))
+    applet = os.path.basename(sys.argv[0])
     funcs = [v for v in globals().values() if type(v) is type(__main) and v.__module__ == '__main__' and not v.__name__.startswith('_')]
     if not PY3:
         for func in funcs:
@@ -212,17 +215,17 @@ def __main():
     funcs = sorted(funcs, key=lambda x:x.__name__)
     params = {f.__name__:list(zip_longest(f.__code__.co_varnames[:f.__code__.co_argcount][::-1], (f.__defaults__ or [])[::-1]))[::-1] for f in funcs}
     usage = lambda: sys.stdout.write('Usage: {0} <applet> [arguments]\n\nExamples:\n{1}\n'.format(applet, '\n'.join('\t{0} {1} {2}'.format(applet, k, ' '.join('--{0} {1}'.format(x.replace('_', '-'), x.upper() if y is None else repr(y)) for (x, y) in v)) for k, v in params.items())))
-    if not sys.argv and applet == 'bb.py':
+    if not sys.argv[1:] and applet == 'bb.py':
         return usage()
     if applet == 'bb.py':
-        applet = sys.argv.pop(0)
+        applet = sys.argv[1]
     for f in funcs:
         if f.__name__ == applet:
             break
     else:
         return usage()
     options = [x.replace('_','-')+'=' for x in f.__code__.co_varnames[:f.__code__.co_argcount]]
-    kwargs, _ =  getopt.gnu_getopt(sys.argv, '', options)
+    kwargs, _ =  getopt.gnu_getopt(sys.argv[1:], '', options)
     kwargs = {k[2:].replace('-', '_'):v for k, v in kwargs}
     logging.debug('main %s(%s)', f.__name__, kwargs)
     try:
