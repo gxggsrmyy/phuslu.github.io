@@ -138,6 +138,36 @@ def capture(url, wait_for_text='', selector='body', viewport_size='800x450', fil
     os.chmod(filename, 0o666)
 
 
+def tcptop(pid=None):
+    lines = os.popen('ss -ntpi').read().splitlines()
+    lines.pop(0)
+    info = {}
+    for i in range(0, len(lines), 2):
+        line, next_line = lines[i], lines[i+1]
+        state, _, _, laddr, raddr = line.split()[:5]
+        laddr = laddr.lstrip('::ffff:')
+        raddr = raddr.lstrip('::ffff:')
+        apid = '-'
+        comm = '-'
+        if 'users:' in line:
+            m = re.search(r'"(.+?)".+pid=(\d+)', line)
+            comm, apid = m.group(1, 2)
+        metrics = dict((k,int(v) if re.match(r'^\d+$', v) else v) for k, v in re.findall(r'([a-z_]+):(\S+)', next_line))
+        bytes_acked = metrics.get('bytes_acked', 0)
+        bytes_received = metrics.get('bytes_received', 0)
+        if pid and apid != pid:
+            continue
+        if bytes_acked and bytes_received and state.startswith('ESTAB'):
+            info[laddr, raddr] = (apid, comm, bytes_acked, bytes_received)
+    print("%-6s %-12s %-21s %-21s %6s %6s" % ("PID", "COMM", "LADDR", "RADDR", "RX_KB", "TX_KB"))
+    infolist = sorted(info.items(), key=lambda x:(-x[1][-2], -x[1][-1]))
+    for (laddr, raddr), (pid, comm, bytes_acked, bytes_received) in infolist:
+        rx_kb  = bytes_received//1024 
+        tx_kb  = bytes_acked//1024
+        if rx_kb == 0 or tx_kb == 0:
+            continue
+        print("%-6s %-12.12s %-21s %-21s %6d %6d" % (pid, comm, laddr, raddr, rx_kb, tx_kb))
+
 def reboot_r6220(ip, password):
     request = Request('http://%s/setup.cgi?todo=debug' % ip)
     request.add_header('Authorization', 'Basic %s' % base64.b64encode(('admin:%s' % password).encode()).decode())
@@ -194,7 +224,7 @@ def __main():
     options = [x.replace('_','-')+'=' for x in f.__code__.co_varnames[:f.__code__.co_argcount]]
     kwargs, _ =  getopt.gnu_getopt(sys.argv, '', options)
     kwargs = {k[2:].replace('-', '_'):v for k, v in kwargs}
-    logging.info('main %s(%s)', f.__name__, kwargs)
+    logging.debug('main %s(%s)', f.__name__, kwargs)
     try:
         result = f(**kwargs)
     except TypeError as e:
