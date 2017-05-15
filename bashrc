@@ -1,7 +1,7 @@
 
-# curl phuslu.github.io/bashrc | tee -a ~/.bashrc
+# curl https://phuslu.github.io/bashrc | tee -a ~/.bashrc
 if test "${HOME%/*}" = "/Users" ; then
-   #curl -LOJ http://phuslu.github.io/candidate/IR_Black.terminal
+   #curl -LOJ https://phuslu.github.io/candidate/IR_Black.terminal
    alias ls='ls -G'
 else
    alias ls='ls -ph --color=auto'
