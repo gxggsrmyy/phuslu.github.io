@@ -178,10 +178,10 @@ def main():
             if is_zip:
                 link = 'https://%s.github.io/%s' % (github_user, fullname)
                 link_class = 'octicon file-zip'
-            if is_media:
+            elif is_media:
                 link = 'https://%s.github.io/%s' % (github_user, fullname)
                 link_class = 'octicon file-media'
-            if is_material:
+            elif is_material:
                 link = 'https://%s.github.io/%s' % (github_user, fullname)
                 link_class = 'octicon file'
             else:
