@@ -141,7 +141,7 @@ def capture(url, wait_for_text='', selector='body', viewport_size='800x450', fil
 def tcptop(pid=None):
     if not os.environ.get('WATCHED'):
         os.environ['WATCHED'] = '1'
-        os.execv('/usr/bin/watch', ['watch', ' '.join(sys.argv)])
+        os.execv('/usr/bin/watch', ['watch', '-n1', ' '.join(sys.argv)])
     lines = os.popen('ss -ntpi').read().splitlines()
     lines.pop(0)
     info = {}
@@ -159,6 +159,8 @@ def tcptop(pid=None):
         bytes_acked = metrics.get('bytes_acked', 0)
         bytes_received = metrics.get('bytes_received', 0)
         if pid and apid != pid:
+            continue
+        if laddr.startswith('127.') or raddr.startswith('127.'):
             continue
         if bytes_acked and bytes_received and state.startswith('ESTAB'):
             info[laddr, raddr] = (apid, comm, bytes_acked, bytes_received)
