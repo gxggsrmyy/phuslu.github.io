@@ -148,8 +148,6 @@ def tcptop(pid=None):
     for i in range(0, len(lines), 2):
         line, next_line = lines[i], lines[i+1]
         state, _, _, laddr, raddr = line.split()[:5]
-        laddr = laddr.lstrip('::ffff:')
-        raddr = raddr.lstrip('::ffff:')
         apid = '-'
         comm = '-'
         if 'users:' in line:
@@ -160,8 +158,14 @@ def tcptop(pid=None):
         bytes_received = metrics.get('bytes_received', 0)
         if pid and apid != pid:
             continue
-        if laddr.startswith('127.') or raddr.startswith('127.'):
+        if laddr.startswith(('127.', '::ffff:1')) or raddr.startswith(('127.', '::ffff:1')):
             continue
+        if bytes_acked == 0 or bytes_received == 0:
+            continue
+        if not state.startswith('ESTAB'):
+            continue
+        laddr = laddr.lstrip('::ffff:')
+        raddr = raddr.lstrip('::ffff:')
         if bytes_acked and bytes_received and state.startswith('ESTAB'):
             info[laddr, raddr] = (apid, comm, bytes_acked, bytes_received)
     print("%-6s %-12s %-21s %-21s %6s %6s" % ("PID", "COMM", "LADDR", "RADDR", "RX_KB", "TX_KB"))
