@@ -157,8 +157,9 @@ def main():
         if name.lower() == 'readme.md':
             README_FILENAME = name
         is_url = name.endswith('.url')
-        is_zip = name.endswith(('.zip', '.7z', '.bz2', '.gz', '.tar', '.tgz', '.tbz2', '.cab'))
+        is_zip = name.endswith(('.zip', '.7z', '.bz2', '.gz', '.tar', '.tgz', '.tbz2', '.cab', '.crx'))
         is_media = name.endswith(('.jpg','.png','.bmp','.gif','.ico','.webp','.flv','.mp4','.mkv','.avi','.mkv'))
+        is_material = name.endswith(('.conf', '.md', '.txt', '.ttf', '.css'))
         is_dir = os.path.isdir(name)
         fsize = human_filesize(os.path.getsize(name)) if not is_dir else '-'
         mtime = time.strftime('%d-%b-%Y %H:%M', time.gmtime(getmtime(name, use_git=use_git)+8*3600))
@@ -180,6 +181,9 @@ def main():
             if is_media:
                 link = 'https://%s.github.io/%s' % (github_user, fullname)
                 link_class = 'octicon file-media'
+            if is_material:
+                link = 'https://%s.github.io/%s' % (github_user, fullname)
+                link_class = 'octicon file'
             else:
                 link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
             if fullname in lfs_files:
