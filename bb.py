@@ -158,7 +158,7 @@ def tcptop(pid=None):
         bytes_received = metrics.get('bytes_received', 0)
         if pid and apid != pid:
             continue
-        if laddr.startswith(('127.', '::ffff:1')) or raddr.startswith(('127.', '::ffff:1')):
+        if laddr.startswith(('127.', 'fe80::')) or raddr.startswith(('127.', 'fe80::')):
             continue
         if bytes_acked == 0 or bytes_received == 0:
             continue
