@@ -157,7 +157,7 @@ def main():
         if name.lower() == 'readme.md':
             README_FILENAME = name
         is_url = name.endswith('.url')
-        is_zip = name.endswith(('.zip', '.7z', '.bz2', '.gz', '.tar', '.tgz', '.tbz2'))
+        is_zip = name.endswith(('.zip', '.7z', '.bz2', '.gz', '.tar', '.tgz', '.tbz2', '.cab'))
         is_media = name.endswith(('.jpg','.png','.bmp','.gif','.ico','.webp','.flv','.mp4','.mkv','.avi','.mkv'))
         is_dir = os.path.isdir(name)
         fsize = human_filesize(os.path.getsize(name)) if not is_dir else '-'
@@ -174,16 +174,18 @@ def main():
             link_class = 'octicon bookmark'
             display_name = os.path.splitext(display_name)[0]
         elif use_git:
+            if is_zip:
+                link = 'https://%s.github.io/%s' % (github_user, fullname)
+                link_class = 'octicon file-zip'
+            if is_media:
+                link = 'https://%s.github.io/%s' % (github_user, fullname)
+                link_class = 'octicon file-media'
+            else:
+                link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
             if fullname in lfs_files:
                 link = 'https://media.githubusercontent.com/media/%s/%s/master/%s' % (github_user, github_repo, fullname)
                 info = dict(x.split(None, 1) for x in open(name) if x.strip())
                 fsize = human_filesize(int(info['size'].strip())) if 'size' in info else '-'
-            else:
-                link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
-            if is_zip:
-                link_class = 'octicon file-zip'
-            if is_media:
-                link_class = 'octicon file-media'
         else:
             link = name
             if is_zip:
