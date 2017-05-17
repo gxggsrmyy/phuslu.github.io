@@ -138,10 +138,10 @@ def capture(url, wait_for_text='', selector='body', viewport_size='800x450', fil
     os.chmod(filename, 0o666)
 
 
-def tcptop(pid=None):
+def tcptop(pid=None, interval='1'):
     if not os.environ.get('WATCHED'):
         os.environ['WATCHED'] = '1'
-        os.execv('/usr/bin/watch', ['watch', '-n1', ' '.join(sys.argv)])
+        os.execv('/usr/bin/watch', ['watch', '-n' + interval, ' '.join(sys.argv)])
     lines = os.popen('ss -ntpi').read().splitlines()
     lines.pop(0)
     info = {}
