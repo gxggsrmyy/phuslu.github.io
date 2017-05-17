@@ -150,7 +150,11 @@ def main():
     README_FILENAME = ''
     for name in names:
         fullname = os.path.join(target_dir, name).strip('/')
-        if name.startswith('.') or name.endswith('.md.html') or name == 'index.html':
+        if name.startswith('.') or name == 'index.html':
+            continue
+        if name.endswith('.md.html'):
+            if not os.path.exists(name.rstrip('.html')):
+                os.remove(name)
             continue
         if 'nolist' in re.findall(r'[0-9a-zA-Z]+', name):
             continue
