@@ -220,9 +220,13 @@ def __main():
             setattr(func, '__code__', getattr(func, 'func_code'))
     funcs = sorted(funcs, key=lambda x:x.__name__)
     params = {f.__name__:list(zip_longest(f.__code__.co_varnames[:f.__code__.co_argcount][::-1], (f.__defaults__ or [])[::-1]))[::-1] for f in funcs}
-    usage = lambda: sys.stdout.write('Usage: {0} <applet> [arguments]\n\nExamples:\n{1}\n'.format(applet, '\n'.join('\t{0} {1} {2}'.format(applet, k, ' '.join('--{0} {1}'.format(x.replace('_', '-'), x.upper() if y is None else repr(y)) for (x, y) in v)) for k, v in params.items())))
-    if not sys.argv[1:] and applet == 'bb.py':
-        return usage()
+    def usage(applet):
+        if applet == 'bb.py':
+            print('Usage: {0} <applet> [arguments]\n\nExamples:\n{1}\n'.format(applet, '\n'.join('\t{0} {1} {2}'.format(applet, k, ' '.join('--{0} {1}'.format(x.replace('_', '-'), x.upper() if y is None else repr(y)) for (x, y) in v)) for k, v in params.items())))
+        else:
+            print('\nUsage:\n\t{0} {1}'.format(applet, ' '.join('--{0} {1}'.format(x.replace('_', '-'), x.upper() if y is None else repr(y)) for (x, y) in params[applet])))
+    if '-h' in sys.argv or '--help' in sys.argv or (applet == 'bb.py' and not sys.argv[1:]):
+        return usage(applet)
     if applet == 'bb.py':
         applet = sys.argv[1]
     for f in funcs:
@@ -238,8 +242,7 @@ def __main():
         result = f(**kwargs)
     except TypeError as e:
         if re.search(r'missing \d+ .* argument', str(e)):
-            print('\nUsage:\n\t{0} {1}'.format(applet, ' '.join('--{0} {1}'.format(x.replace('_', '-'), x.upper() if y is None else repr(y)) for (x, y) in params[applet])))
-            return
+            return usage(applet)
         raise
     if type(result) == type(b''):
         result = result.decode().strip()
