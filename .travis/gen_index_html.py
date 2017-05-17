@@ -183,7 +183,7 @@ def main():
 <title>%s</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-<div class="container" style="min-width: 360px; max-width: 60%%">%s</div>''' % (name.rstrip('.md'), html)
+<div class="container" style="min-width: 400px; max-width: 60%%">%s</div>''' % (name.rstrip('.md'), html)
             open(name + '.html', 'wb').write(html)
             link = name + '.html'
         elif is_url:
