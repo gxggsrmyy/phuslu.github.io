@@ -158,7 +158,7 @@ def tcptop(pid=None, interval='1'):
         bytes_received = metrics.get('bytes_received', 0)
         if pid and apid != pid:
             continue
-        if laddr.startswith(('127.', 'fe80::')) or raddr.startswith(('127.', 'fe80::')):
+        if laddr.startswith(('127.', 'fe80::', '::1')) or raddr.startswith(('127.', 'fe80::', '::1')):
             continue
         if bytes_acked == 0 or bytes_received == 0:
             continue
@@ -176,6 +176,7 @@ def tcptop(pid=None, interval='1'):
         if rx_kb == 0 or tx_kb == 0:
             continue
         print("%-6s %-12.12s %-21s %-21s %6d %6d" % (pid, comm, laddr, raddr, rx_kb, tx_kb))
+
 
 def reboot_r6220(ip, password):
     request = Request('http://%s/setup.cgi?todo=debug' % ip)
@@ -241,7 +242,8 @@ def __main():
     try:
         result = f(**kwargs)
     except TypeError as e:
-        if re.search(r'missing \d+ .* argument', str(e)):
+        patterns = [r'missing \d+ .* argument', r'takes (\w+ )+\d+ argument']
+        if any(re.search(x, str(e)) for x in patterns):
             return usage(applet)
         raise
     if type(result) == type(b''):
