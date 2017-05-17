@@ -150,12 +150,13 @@ def main():
     README_FILENAME = ''
     for name in names:
         fullname = os.path.join(target_dir, name).strip('/')
-        if name.startswith('.') or name == 'index.html':
+        if name.startswith('.') or name.endswith('.md.html') or name == 'index.html':
             continue
         if 'nolist' in re.findall(r'[0-9a-zA-Z]+', name):
             continue
         if name.lower() == 'readme.md':
             README_FILENAME = name
+        is_md = name.endswith('.md')
         is_url = name.endswith('.url')
         is_zip = name.endswith(('.zip', '.7z', '.bz2', '.gz', '.tar', '.tgz', '.tbz2', '.cab', '.crx'))
         is_media = name.endswith(('.jpg','.png','.bmp','.gif','.ico','.webp','.flv','.mp4','.mkv','.avi','.mkv'))
@@ -168,6 +169,13 @@ def main():
         if is_dir:
             link = name + '/'
             link_class = 'octicon file-directory'
+        elif is_md:
+            README_MARKDOWN = mistune.markdown(open(name, 'rb').read())
+            README_HTML = render(README_TEMPLATE, locals())
+            html = render(README_TEMPLATE, locals())
+            html = '<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">\n<div class="container">%s</div>' % html
+            open(name + '.html', 'wb').write(html)
+            link = name + '.html'
         elif is_url:
             info = dict(x.split('=', 1) for x in open(name) if '=' in x)
             link = info['URL'].strip()

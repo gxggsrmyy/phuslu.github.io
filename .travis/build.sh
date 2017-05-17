@@ -21,7 +21,7 @@ EOF
 fi
 
 find . -type d | grep -vE '^(\./\.)' | xargs -n1 -i python .travis/gen_index_html.py {}
-find . -type f -name "index.html" -exec git add "{}" \;
+find . -type f -name "index.html" -or -name "*.md.html" -exec git add "{}" \;
 
 test -z "$(git diff HEAD)" && exit 0
 git config user.name "travis-ci-build"
