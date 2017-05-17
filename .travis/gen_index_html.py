@@ -170,10 +170,16 @@ def main():
             link = name + '/'
             link_class = 'octicon file-directory'
         elif is_md:
-            README_MARKDOWN = mistune.markdown(open(name, 'rb').read())
-            README_HTML = render(README_TEMPLATE, locals())
-            html = render(README_TEMPLATE, locals())
-            html = '<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">\n<div class="container">%s</div>' % html
+            ctx = {}
+            ctx['README_FILENAME'] = name
+            ctx['README_MARKDOWN'] = mistune.markdown(open(name, 'rb').read())
+            html = render(README_TEMPLATE, ctx)
+            html = '''<!DOCTYPE html>
+<meta charset="utf-8">
+<title>%s</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<div class="container">%s</div>''' % (name.rstrip('.md'), html)
             open(name + '.html', 'wb').write(html)
             link = name + '.html'
         elif is_url:
