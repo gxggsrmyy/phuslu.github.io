@@ -98,4 +98,4 @@ UNIX比其他操作系统更需要提供恢复删除功能，原因是:
 
 欢迎来到未来世界。
 
-[http://zqcoder.qiniucdn.com/data/20090512131053/index.html](http://zqcoder.qiniucdn.com/data/20090512131053/index.html)
+[zqcoder.qiniucdn.com](http://zqcoder.qiniucdn.com/data/20090512131053/index.html)
