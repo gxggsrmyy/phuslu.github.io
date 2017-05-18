@@ -264,7 +264,7 @@ $("#photo").onchange = function () {
 
 <?php if (isset($readme_filename)) : ?>
 <textarea id="readme-text" style="display:none"><?php echo file_get_contents($readme_filename); ?></textarea>
-<table class="table table-striped table-bordered table-hover table-condensed">
+<table class="table table-striped table-bordered table-condensed">
   <tr><th colspan="3"><?php echo $readme_filename; ?></th></tr>
   <tr><td colspan="3">
     <div id="readme" class="markdown-body"></div>
