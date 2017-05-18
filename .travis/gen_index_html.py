@@ -87,7 +87,7 @@ padding-right: 13px;
 '''
 
 README_TEMPLATE = '''
-<table class="table table-striped table-bordered table-hover table-condensed">
+<table class="table table-striped table-bordered table-condensed">
   <tr><th colspan="3">{{ README_FILENAME }}</th></tr>
   <tr><td colspan="3">
     <div id="readme" class="markdown-body">{{ README_MARKDOWN }}</div>
