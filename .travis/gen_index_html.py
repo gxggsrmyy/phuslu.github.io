@@ -103,6 +103,28 @@ README_TEMPLATE = '''
 </style>
 '''
 
+ARTICLE_TEMPLATE = '''<!DOCTYPE html>
+<meta charset="utf-8">
+<title>{{ ARTICLE_TITLE }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<div class="container" style="min-width: 392px; max-width: 60%">
+<table class="table table-striped table-bordered table-condensed">
+  <tr><th colspan="3">{{ ARTICLE_TITLE }}</th></tr>
+  <tr><td colspan="3">
+    <div id="readme" class="markdown-body">{{ ARTICLE_HTML }}</div>
+  </td></tr>
+</table>
+<link href="https://cdn.bootcss.com/github-markdown-css/2.6.0/github-markdown.min.css" rel="stylesheet">
+<style>
+.markdown-body {
+  float: left;
+  font-family: "ubuntu", "Tahoma", "Microsoft YaHei", arial,sans-serif;
+}
+</style>
+</div>
+'''
+
 def render(template, vars):
     return re.sub(r'(?is){{ (\w+) }}', lambda m: str(vars.get(m.group(1), '')), template)
 
@@ -174,17 +196,9 @@ def main():
             link = name + '/'
             link_class = 'octicon file-directory'
         elif is_md:
-            ctx = {}
-            ctx['README_FILENAME'] = name
-            ctx['README_MARKDOWN'] = mistune.markdown(open(name, 'rb').read())
-            html = render(README_TEMPLATE, ctx)
-            html = '''<!DOCTYPE html>
-<meta charset="utf-8">
-<title>%s</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-<div class="container" style="min-width: 392px; max-width: 60%%">%s</div>''' % (name.rstrip('.md'), html)
-            open(name + '.html', 'wb').write(html)
+            ARTICLE_TITLE = name.rstrip('.md')
+            ARTICLE_HTML = mistune.markdown(open(name, 'rb').read())
+            open(name + '.html', 'wb').write(render(ARTICLE_TEMPLATE, locals()))
             link = name + '.html'
         elif is_url:
             info = dict(x.split('=', 1) for x in open(name) if '=' in x)
