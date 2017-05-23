@@ -123,10 +123,15 @@ function print_nf_conntrack(s)
   local nf_conntrack_count = rtrim(read_file("/proc/sys/net/netfilter/nf_conntrack_count"))
   local nf_conntrack_max = rtrim(read_file("/proc/sys/net/netfilter/nf_conntrack_max"))
 
-  s = print_metric_type(s, "node_nf_conntrack_entries", "gauge")
-  s = print_metric(s, nil, nf_conntrack_count)
-  s = print_metric_type(s, "node_nf_conntrack_entries_limit", "gauge")
-  s = print_metric(s, nil, nf_conntrack_max)
+  if nf_conntrack_count ~= '' then
+    s = print_metric_type(s, "node_nf_conntrack_entries", "gauge")
+    s = print_metric(s, nil, nf_conntrack_count)
+  end
+
+  if nf_conntrack_max ~= '' then
+    s = print_metric_type(s, "node_nf_conntrack_entries_limit", "gauge")
+    s = print_metric(s, nil, nf_conntrack_max)
+  end
 
   return s
 end
