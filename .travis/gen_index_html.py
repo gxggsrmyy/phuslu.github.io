@@ -220,8 +220,11 @@ def main():
                 link = 'https://raw.githubusercontent.com/%s/%s/master/%s' % (github_user, github_repo, fullname)
             if fullname in lfs_files:
                 link = 'https://media.githubusercontent.com/media/%s/%s/master/%s' % (github_user, github_repo, fullname)
-                info = dict(x.split(None, 1) for x in open(name) if x.strip())
-                fsize = human_filesize(int(info['size'].strip())) if 'size' in info else '-'
+                size = os.path.getsize(name)
+                if size < 1024:
+                    info = dict(x.split(None, 1) for x in open(name) if x.strip())
+                    size = int(info['size'].strip())
+                fsize = human_filesize(size)
         else:
             link = name
             if is_zip:
