@@ -60,12 +60,8 @@ def do_connect():
 def do_preread():
     global PREREAD_FILES
     cmd = '/bin/fgrep "" ' + ' '.join(PREREAD_FILELIST)
-    stdin, stdout, stderr = ssh_client.exec_command(cmd)
-    output = stdout.read()
-    stdin.close()
-    stdout.close()
-    stderr.close()
-    lines = output.splitlines(True)
+    _, stdout, _ = ssh_client.exec_command(cmd)
+    lines = stdout.read().splitlines(True)
     PREREAD_FILES = {}
     for line in lines:
         name, value = line.split(':', 1)
@@ -79,11 +75,8 @@ def read_file(filename):
             if filename in PREREAD_FILELIST:
                 output = PREREAD_FILES.get(filename, '')
             else:
-                stdin, stdout, stderr = ssh_client.exec_command('/bin/cat ' + filename)
+                _, stdout, _ = ssh_client.exec_command('/bin/cat ' + filename)
                 output = stdout.read()
-                stdin.close()
-                stdout.close()
-                stderr.close()
             return output
         except StandardError as e:
             if i < MAX_RETRY - 1:
@@ -91,15 +84,6 @@ def read_file(filename):
                 do_connect()
             else:
                 raise
-
-
-def read_popen(cmd):
-    stdin, stdout, stderr = ssh_client.exec_command(cmd + ' 2>&1')
-    output = stdout.read()
-    stdin.close()
-    stdout.close()
-    stderr.close()
-    return output
 
 
 def print_metric_type(metric, mtype):
@@ -133,15 +117,14 @@ def print_uname():
     return s
 
 
-def print_time(use_cli=True):
+def print_time():
     rtc = read_file('/proc/driver/rtc').strip()
     if rtc:
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
-    elif use_cli:
-        ts = float(read_popen('date +%s').strip())
     else:
-        return ''
+        _, stdout, _ = ssh_client.exec_command('date +%s')
+        ts = float(stdout.read().strip() or '0.0')
     s = ''
     s += print_metric_type('node_time', 'counter')
     s += print_metric(None, ts)
