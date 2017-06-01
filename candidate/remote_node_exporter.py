@@ -96,9 +96,9 @@ def print_metric(labels, value):
     if isinstance(value, int):
         value = float(value)
     if labels:
-        s = '%s{%s} %g\n' % (this_metric, labels, value)
+        s = '%s{%s} %e\n' % (this_metric, labels, value)
     else:
-        s = '%s %g\n' % (this_metric, value)
+        s = '%s %e\n' % (this_metric, value)
     return s
 
 
