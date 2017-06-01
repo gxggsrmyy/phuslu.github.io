@@ -10,22 +10,42 @@ import os
 import sys
 import time
 
-libc = ctypes.CDLL(ctypes.util.find_library('c'))
-
-ssh_client = None
-sftp = None
-this_metric = ''
-
 ENV_DAEMON = os.environ.get('DAEMON')
 ENV_HTTP_HOST = os.environ.get('HTTP_HOST')
 ENV_SSH_HOST = os.environ.get('SSH_HOST')
 ENV_SSH_PORT = os.environ.get('SSH_PORT')
 ENV_SSH_USER = os.environ.get('SSH_USER')
 ENV_SSH_PASS = os.environ.get('SSH_PASS')
+ENV_USE_SFTP = os.environ.get('USE_SFTP')
 ENV_PORT = os.environ.get('PORT')
 
+ssh_client = None
+sftp = None
+this_metric = ''
 
-def connect_remote():
+libc = ctypes.CDLL(ctypes.util.find_library('c'))
+
+PREREAD_FILES = {}
+PREREAD_FILELIST = [
+    '/proc/sys/fs/file-nr',
+    '/proc/loadavg',
+    '/proc/meminfo',
+    '/proc/net/dev',
+    '/proc/net/netstat',
+    '/proc/net/snmp',
+    '/proc/sys/net/netfilter/nf_conntrack_count',
+    '/proc/sys/net/netfilter/nf_conntrack_max',
+    '/proc/sys/kernel/hostname',
+    '/proc/sys/kernel/osrelease',
+    '/proc/driver/rtc',
+    '/proc/stat',
+    '/proc/sys/kernel/ostype',
+    '/proc/sys/kernel/version',
+    '/proc/vmstat',
+]
+
+
+def do_connect():
     global ssh_client, sftp
     host = ENV_SSH_HOST
     port = int(ENV_SSH_PORT or '22')
@@ -34,9 +54,53 @@ def connect_remote():
     if ssh_client is None:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-    ssh_client.connect(host, int(port), username, password)
+    ssh_client.connect(host, int(port), username, password, compress=True)
     ssh_client._transport.set_keepalive(60)
-    sftp = ssh_client.open_sftp()
+    if ENV_USE_SFTP:
+        try:
+            sftp = ssh_client.open_sftp()
+        except paramiko.SSHException:
+            pass
+
+
+def do_preread():
+    global PREREAD_FILES
+    cmd = '/bin/fgrep "" ' + ' '.join(PREREAD_FILELIST)
+    stdin, stdout, stderr = ssh_client.exec_command(cmd)
+    output = stdout.read()
+    stdin.close()
+    stdout.close()
+    stderr.close()
+    lines = output.splitlines(True)
+    PREREAD_FILES = {}
+    for line in lines:
+        name, value = line.split(':', 1)
+        PREREAD_FILES[name] = PREREAD_FILES.setdefault(name, '') + value
+
+
+def read_file(filename):
+    MAX_RETRY = 3
+    for i in xrange(MAX_RETRY):
+        try:
+            if ssh_client is not None and sftp is None:
+                if filename in PREREAD_FILELIST:
+                    return PREREAD_FILES.get(filename, '')
+                stdin, stdout, stderr = ssh_client.exec_command('/bin/cat ' + filename)
+                output = stdout.read()
+                stdin.close()
+                stdout.close()
+                stderr.close()
+            else:
+                output = sftp.open(filename).read()
+            return output
+        except StandardError as e:
+            if 'No such file' in str(e):
+                return ''
+            if i < MAX_RETRY - 1:
+                time.sleep(0.5)
+                do_connect()
+            else:
+                raise
 
 
 def read_popen(cmd):
@@ -46,21 +110,6 @@ def read_popen(cmd):
     stdout.close()
     stderr.close()
     return output
-
-
-def read_file(filename):
-    MAX_RETRY = 3
-    for i in xrange(MAX_RETRY):
-        try:
-            return sftp.open(filename).read()
-        except StandardError as e:
-            if 'No such file' in str(e):
-                return ''
-            if i < MAX_RETRY - 1:
-                time.sleep(0.5)
-                connect_remote()
-            else:
-                raise
 
 
 def print_metric_type(metric, mtype):
@@ -228,6 +277,11 @@ def print_netdev():
 
 
 def print_all():
+    if ssh_client is None:
+        do_connect()
+    if ssh_client is not None and sftp is None:
+        # sftp is disable, fallback to preread
+        do_preread()
     s = ''
     s += print_time(use_cli=False)
     s += print_uname()
@@ -247,7 +301,7 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         body = print_all()
         self.send_response(200, 'OK')
         self.end_headers()
-        self.wfile.write(print_all())
+        self.wfile.write(body)
         self.wfile.close()
         self.log_request(200, len(body))
 
