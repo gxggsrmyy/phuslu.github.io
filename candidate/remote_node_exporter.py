@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # coding:utf-8
 
+import BaseHTTPServer
 import ctypes
 import ctypes.util
-import BaseHTTPServer
+import os
 import paramiko
 import re
-import os
+import socket
 import sys
 import time
 
@@ -16,37 +17,35 @@ ENV_SSH_HOST = os.environ.get('SSH_HOST')
 ENV_SSH_PORT = os.environ.get('SSH_PORT')
 ENV_SSH_USER = os.environ.get('SSH_USER')
 ENV_SSH_PASS = os.environ.get('SSH_PASS')
-ENV_USE_SFTP = os.environ.get('USE_SFTP')
 ENV_PORT = os.environ.get('PORT')
 
 ssh_client = None
-sftp = None
 this_metric = ''
 
 libc = ctypes.CDLL(ctypes.util.find_library('c'))
 
 PREREAD_FILES = {}
 PREREAD_FILELIST = [
-    '/proc/sys/fs/file-nr',
+    '/proc/driver/rtc',
     '/proc/loadavg',
     '/proc/meminfo',
     '/proc/net/dev',
     '/proc/net/netstat',
     '/proc/net/snmp',
-    '/proc/sys/net/netfilter/nf_conntrack_count',
-    '/proc/sys/net/netfilter/nf_conntrack_max',
+    '/proc/stat',
+    '/proc/sys/fs/file-nr',
     '/proc/sys/kernel/hostname',
     '/proc/sys/kernel/osrelease',
-    '/proc/driver/rtc',
-    '/proc/stat',
     '/proc/sys/kernel/ostype',
     '/proc/sys/kernel/version',
+    '/proc/sys/net/netfilter/nf_conntrack_count',
+    '/proc/sys/net/netfilter/nf_conntrack_max',
     '/proc/vmstat',
 ]
 
 
 def do_connect():
-    global ssh_client, sftp
+    global ssh_client
     host = ENV_SSH_HOST
     port = int(ENV_SSH_PORT or '22')
     username = ENV_SSH_USER
@@ -56,11 +55,6 @@ def do_connect():
         ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
     ssh_client.connect(host, int(port), username, password, compress=True)
     ssh_client._transport.set_keepalive(60)
-    if ENV_USE_SFTP:
-        try:
-            sftp = ssh_client.open_sftp()
-        except paramiko.SSHException:
-            pass
 
 
 def do_preread():
@@ -82,20 +76,16 @@ def read_file(filename):
     MAX_RETRY = 3
     for i in xrange(MAX_RETRY):
         try:
-            if ssh_client is not None and sftp is None:
-                if filename in PREREAD_FILELIST:
-                    return PREREAD_FILES.get(filename, '')
+            if filename in PREREAD_FILELIST:
+                output = PREREAD_FILES.get(filename, '')
+            else:
                 stdin, stdout, stderr = ssh_client.exec_command('/bin/cat ' + filename)
                 output = stdout.read()
                 stdin.close()
                 stdout.close()
                 stderr.close()
-            else:
-                output = sftp.open(filename).read()
             return output
         except StandardError as e:
-            if 'No such file' in str(e):
-                return ''
             if i < MAX_RETRY - 1:
                 time.sleep(0.5)
                 do_connect()
@@ -279,11 +269,9 @@ def print_netdev():
 def print_all():
     if ssh_client is None:
         do_connect()
-    if ssh_client is not None and sftp is None:
-        # sftp is disable, fallback to preread
-        do_preread()
+    do_preread()
     s = ''
-    s += print_time(use_cli=False)
+    s += print_time()
     s += print_uname()
     s += print_loadavg()
     s += print_stat()
