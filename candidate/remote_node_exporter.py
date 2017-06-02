@@ -82,7 +82,7 @@ def do_exec_command(cmd, redirect_stderr=False):
         try:
             _, stdout, _ = ssh_client.exec_command(cmd, timeout=SSH_COMMAND_TIMEOUT)
             return stdout.read()
-        except StandardError as e:
+        except (paramiko.SSHException, StandardError) as e:
             logging.error('do_exec_command(%r) error: %s', cmd, e)
             time.sleep(0.5)
             do_connect()
