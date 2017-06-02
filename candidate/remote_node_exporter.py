@@ -32,6 +32,7 @@ ENV_SSH_PORT = os.environ.get('SSH_PORT')
 ENV_SSH_USER = os.environ.get('SSH_USER')
 ENV_SSH_PASS = os.environ.get('SSH_PASS')
 ENV_SSH_KEYFILE = os.environ.get('SSH_KEYFILE')
+ENV_SSH_TIMEZONE_OFFSET = os.environ.get('SSH_TIMEZONE_OFFSET')
 ENV_PORT = os.environ.get('PORT')
 
 ssh_client = None
@@ -130,6 +131,8 @@ def collect_time():
     if rtc:
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
+        if ENV_SSH_TIMEZONE_OFFSET:
+            ts += int(ENV_SSH_TIMEZONE_OFFSET) * 60
     elif system_time:
         ts = float(system_time)
     else:
