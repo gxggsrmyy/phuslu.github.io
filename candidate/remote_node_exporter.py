@@ -32,6 +32,7 @@ ENV_PORT = os.environ.get('PORT')
 
 ssh_client = None
 this_metric = ''
+is_bash = False
 
 libc = ctypes.CDLL(ctypes.util.find_library('c'))
 
@@ -57,7 +58,7 @@ PREREAD_FILELIST = [
 
 
 def do_connect():
-    global ssh_client
+    global ssh_client, is_bash
     host = ENV_SSH_HOST
     port = int(ENV_SSH_PORT or '22')
     username = ENV_SSH_USER
@@ -67,6 +68,8 @@ def do_connect():
         ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
     ssh_client.connect(host, int(port), username, password, compress=True)
     ssh_client._transport.set_keepalive(60)
+    _, stdout, _ = ssh_client.exec_command('echo $SHELL')
+    is_bash = stdout.read().strip().endswith('bash')
 
 
 def do_exec_command(cmd, redirect_stderr=False):
@@ -144,6 +147,9 @@ def print_time():
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
     elif system_time:
         ts = float(system_time)
+    elif is_bash:
+        output = do_exec_command("printf '%(%Y%m%d%H%M%S)T'").strip()
+        ts = time.mktime(time.strptime(output, '%Y%m%d%H%M%S'))
     else:
         ts = float(do_exec_command('date +%s').strip() or '0')
     s = ''
