@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 # coding:utf-8
+# License:
+#     MIT License, Copyright phuslu@hotmail.com
+# Usage:
+#     /usr/bin/env DAEMON=1 PORT=9101 SSH_HOST=192.168.2.1 SSH_USER=admin SSH_PASS=123456 /home/phuslu/phuslu.github.io/candidate/remote_node_exporter.py
+# TODO:
+#     1. /proc/diskstats /proc/block/sd[X]/size /sys/class/hwmon/
+#     2. process_cpu_seconds_total/process_max_fds/process_open_fds/process_resident_memory_bytes/process_start_time_seconds/process_virtual_memory_bytes
+
 
 import BaseHTTPServer
 import ctypes
@@ -29,6 +37,7 @@ libc = ctypes.CDLL(ctypes.util.find_library('c'))
 
 PREREAD_FILES = {}
 PREREAD_FILELIST = [
+    '/etc/storage/system_time',
     '/proc/driver/rtc',
     '/proc/loadavg',
     '/proc/meminfo',
@@ -129,9 +138,12 @@ def print_uname():
 
 def print_time():
     rtc = read_file('/proc/driver/rtc').strip()
+    system_time = read_file('/etc/storage/system_time').strip()
     if rtc:
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
+    elif system_time:
+        ts = float(system_time)
     else:
         ts = float(do_exec_command('date +%s').strip() or '0')
     s = ''
