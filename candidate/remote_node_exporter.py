@@ -4,12 +4,15 @@
 import BaseHTTPServer
 import ctypes
 import ctypes.util
+import logging
 import os
 import paramiko
 import re
 import socket
 import sys
 import time
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s] process@%(process)s thread@%(thread)s %(filename)s@%(lineno)s - %(funcName)s(): %(message)s', level=logging.INFO)
 
 ENV_DAEMON = os.environ.get('DAEMON')
 ENV_HTTP_HOST = os.environ.get('HTTP_HOST')
@@ -57,11 +60,27 @@ def do_connect():
     ssh_client._transport.set_keepalive(60)
 
 
+def do_exec_command(cmd, redirect_stderr=False):
+    SSH_COMMAND_TIMEOUT = 8
+    MAX_RETRY = 3
+    if redirect_stderr:
+        cmd += ' 2>&1'
+    for i in range(MAX_RETRY):
+        try:
+            _, stdout, _ = ssh_client.exec_command(cmd, timeout=SSH_COMMAND_TIMEOUT)
+            return stdout.read()
+        except StandardError as e:
+            logging.error('do_exec_command(%r) error: %s', cmd, e)
+            time.sleep(0.5)
+            do_connect()
+    return ''
+
+
 def do_preread():
     global PREREAD_FILES
     cmd = '/bin/fgrep "" ' + ' '.join(PREREAD_FILELIST)
-    _, stdout, _ = ssh_client.exec_command(cmd)
-    lines = stdout.read().splitlines(True)
+    output = do_exec_command(cmd)
+    lines = output.splitlines(True)
     PREREAD_FILES = {}
     for line in lines:
         name, value = line.split(':', 1)
@@ -69,21 +88,10 @@ def do_preread():
 
 
 def read_file(filename):
-    MAX_RETRY = 3
-    for i in xrange(MAX_RETRY):
-        try:
-            if filename in PREREAD_FILELIST:
-                output = PREREAD_FILES.get(filename, '')
-            else:
-                _, stdout, _ = ssh_client.exec_command('/bin/cat ' + filename)
-                output = stdout.read()
-            return output
-        except StandardError as e:
-            if i < MAX_RETRY - 1:
-                time.sleep(0.5)
-                do_connect()
-            else:
-                raise
+    if filename in PREREAD_FILELIST:
+        return PREREAD_FILES.get(filename, '')
+    else:
+        return do_exec_command('/bin/cat ' + filename)
 
 
 def print_metric_type(metric, mtype):
@@ -93,12 +101,14 @@ def print_metric_type(metric, mtype):
 
 
 def print_metric(labels, value):
-    if isinstance(value, int):
-        value = float(value)
-    if labels:
-        s = '%s{%s} %e\n' % (this_metric, labels, value)
+    if isinstance(value, float):
+        value = '%e' % value if value else '0'
     else:
-        s = '%s %e\n' % (this_metric, value)
+        value = str(value)
+    if labels:
+        s = '%s{%s} %s\n' % (this_metric, labels, value)
+    else:
+        s = '%s %s\n' % (this_metric, value)
     return s
 
 
@@ -123,8 +133,7 @@ def print_time():
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
     else:
-        _, stdout, _ = ssh_client.exec_command('date +%s')
-        ts = float(stdout.read().strip() or '0.0')
+        ts = float(do_exec_command('date +%s').strip() or '0')
     s = ''
     s += print_metric_type('node_time', 'counter')
     s += print_metric(None, ts)
