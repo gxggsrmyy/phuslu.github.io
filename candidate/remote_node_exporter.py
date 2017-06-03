@@ -106,9 +106,10 @@ def print_metric_type(metric, mtype):
 
 
 def print_metric(labels, value):
+    assert isinstance(value, (int, float))
     global this_metric, this_text
-    if isinstance(value, float):
-        value = '%e' % value if value else '0'
+    if isinstance(value, float) or value >= 1000000:
+        value = '%e' % value
     else:
         value = str(value)
     if labels:
@@ -146,9 +147,9 @@ def collect_loadavg():
 def collect_filefd():
     file_nr = read_file('/proc/sys/fs/file-nr').split()
     print_metric_type('node_filefd_allocated', 'gauge')
-    print_metric(None, float(file_nr[0]))
+    print_metric(None, int(file_nr[0]))
     print_metric_type('node_filefd_maximum', 'gauge')
-    print_metric(None, float(file_nr[2]))
+    print_metric(None, int(file_nr[2]))
 
 
 def collect_nf_conntrack():
@@ -156,10 +157,10 @@ def collect_nf_conntrack():
     nf_conntrack_max = read_file('/proc/sys/net/netfilter/nf_conntrack_max').strip()
     if nf_conntrack_count:
         print_metric_type('node_nf_conntrack_entries', 'gauge')
-        print_metric(None, float(nf_conntrack_count))
+        print_metric(None, int(nf_conntrack_count))
     if nf_conntrack_max:
         print_metric_type('node_nf_conntrack_entries_limit', 'gauge')
-        print_metric(None, float(nf_conntrack_max))
+        print_metric(None, int(nf_conntrack_max))
 
 
 def collect_memory():
@@ -170,9 +171,9 @@ def collect_memory():
         mia = mi.split()
         print_metric_type('node_memory_%s' % mia[0], 'gauge')
         if len(mia) == 3:
-            print_metric(None, float(int(mia[1]) * 1024))
+            print_metric(None, int(mia[1]) * 1024)
         else:
-            print_metric(None, float(mia[1]))
+            print_metric(None, int(mia[1]))
 
 
 def collect_netstat():
@@ -184,7 +185,7 @@ def collect_netstat():
         values = valuestr.split()
         for ii, ss in enumerate(keys):
             print_metric_type('node_netstat_%s_%s' % (prefix, ss), 'gauge')
-            print_metric(None, float(values[ii]))
+            print_metric(None, int(values[ii]))
 
 
 def collect_vmstat():
@@ -192,30 +193,30 @@ def collect_vmstat():
     for vm in vmstat:
         vma = vm.split()
         print_metric_type('node_vmstat_%s' % vma[0], 'gauge')
-        print_metric(None, float(vma[1]))
+        print_metric(None, int(vma[1]))
 
 
 def collect_stat():
     cpu_mode = 'user nice system idle iowait irq softirq steal guest guest_nice'.split()
     stat = read_file('/proc/stat')
     print_metric_type('node_boot_time', 'gauge')
-    print_metric(None, float(re.search(r'btime ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'btime ([0-9]+)', stat).group(1)))
     print_metric_type('node_context_switches', 'counter')
-    print_metric(None, float(re.search(r'ctxt ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'ctxt ([0-9]+)', stat).group(1)))
     print_metric_type('node_forks', 'counter')
-    print_metric(None, float(re.search(r'processes ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'processes ([0-9]+)', stat).group(1)))
     print_metric_type('node_intr', 'counter')
-    print_metric(None, float(re.search(r'intr ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'intr ([0-9]+)', stat).group(1)))
     print_metric_type('node_procs_blocked', 'gauge')
-    print_metric(None, float(re.search(r'procs_blocked ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'procs_blocked ([0-9]+)', stat).group(1)))
     print_metric_type('node_procs_running', 'gauge')
-    print_metric(None, float(re.search(r'procs_running ([0-9]+)', stat).group(1)))
+    print_metric(None, int(re.search(r'procs_running ([0-9]+)', stat).group(1)))
     print_metric_type('node_cpu', 'counter')
     cpulines = re.findall(r'(?m)cpu\d+ .+', stat)
     for i, line in enumerate(cpulines):
         cpu = line.split()[1:]
         for ii, mode in enumerate(cpu_mode):
-            print_metric('cpu="cpu%d",mode="%s"' % (i, mode), float(cpu[ii]) / 100)
+            print_metric('cpu="cpu%d",mode="%s"' % (i, mode), int(cpu[ii]) / 100)
 
 
 def collect_netdev():
@@ -232,7 +233,7 @@ def collect_netdev():
         inter = 'receive' if 2*i < len(statss[0]) else 'transmit'
         print_metric_type('node_network_%s_%s' % (inter, faces[i]), 'gauge')
         for ii, value in enumerate(devices):
-            print_metric('device="%s"' % value, float(statss[ii][i]))
+            print_metric('device="%s"' % value, int(statss[ii][i]))
 
 
 def collect_diskstats():
@@ -258,7 +259,7 @@ def collect_diskstats():
     for i, suffix in enumerate(suffixs):
         print_metric_type('node_disk_%s' % suffix, 'gauge')
         for device, values in devices.items():
-            print_metric('device="%s"' % device, float(values[i]))
+            print_metric('device="%s"' % device, int(values[i]))
 
 
 def collect_filesystem():
@@ -285,7 +286,7 @@ def collect_filesystem():
     for suffix in suffixs:
         print_metric_type('node_filesystem_%s' % suffix, 'gauge')
         for mountpoint, info in mountpoints.items():
-            print_metric('device="%(device)s",fstype="%(fstype)s",mountpoint="%(mountpoint)s"' % info, float(info.get(suffix, 0)))
+            print_metric('device="%(device)s",fstype="%(fstype)s",mountpoint="%(mountpoint)s"' % info, int(info.get(suffix, 0)))
 
 
 def collect_all():
