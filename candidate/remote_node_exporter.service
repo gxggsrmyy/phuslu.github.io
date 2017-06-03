@@ -1,5 +1,5 @@
 [Unit]
-Description=Prometheus node_exporter in lua
+Description=Prometheus remote_node_exporter
 After=network.target
 
 [Service]
