@@ -13,7 +13,13 @@ import logging
 import os
 import paramiko
 import re
+import sys
 import time
+
+try:
+    import setproctitle
+except ImportError:
+    setproctitle = None
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] process@%(process)s thread@%(thread)s %(filename)s@%(lineno)s - %(funcName)s(): %(message)s', level=logging.INFO)
 
@@ -26,7 +32,7 @@ ENV_SSH_KEYFILE = os.environ.get('SSH_KEYFILE')
 ENV_SSH_TIMEZONE_OFFSET = os.environ.get('SSH_TIMEZONE_OFFSET')
 ENV_PORT = os.environ.get('PORT')
 
-ssh_client = None
+ssh_client = paramiko.SSHClient()
 this_metric = ''
 this_text = ''
 
@@ -58,8 +64,7 @@ def do_connect():
     username = ENV_SSH_USER
     password = ENV_SSH_PASS
     keyfile = ENV_SSH_KEYFILE
-    if ssh_client is None:
-        ssh_client = paramiko.SSHClient()
+    if ssh_client.get_transport() is None:
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True)
     ssh_client.get_transport().set_keepalive(60)
@@ -75,7 +80,7 @@ def do_exec_command(cmd, redirect_stderr=False):
             _, stdout, _ = ssh_client.exec_command(cmd, timeout=SSH_COMMAND_TIMEOUT)
             return stdout.read()
         except (paramiko.SSHException, StandardError) as e:
-            logging.error('do_exec_command(%r) error: %s', cmd, e)
+            logging.error('do_exec_command(%r) error: %s, reconnect', cmd, e)
             time.sleep(0.5)
             do_connect()
     return ''
@@ -319,9 +324,11 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 def main():
+    port = int(ENV_PORT or '9101')
     if ENV_DAEMON:
         libc.daemon(1, 0)
-    port = int(ENV_PORT or '9101')
+    if setproctitle:
+        setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listen on %d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
     logging.info('Serving HTTP on 0.0.0.0 port %d ...', port)
     BaseHTTPServer.HTTPServer(('', port), MetricsHandler).serve_forever()
 
