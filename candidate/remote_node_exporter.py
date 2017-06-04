@@ -3,7 +3,7 @@
 # License:
 #     MIT License, Copyright phuslu@hotmail.com
 # Usage:
-#     /usr/bin/env DAEMON=1 PORT=9101 SSH_HOST=192.168.2.1 SSH_USER=admin SSH_PASS=123456 /home/phuslu/phuslu.github.io/candidate/remote_node_exporter.py
+#     /usr/bin/env PORT=9101 SSH_HOST=192.168.2.1 SSH_USER=admin SSH_PASS=123456 ./remote_node_exporter.py
 
 
 import BaseHTTPServer
@@ -24,14 +24,15 @@ except ImportError:
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] process@%(process)s thread@%(thread)s %(filename)s@%(lineno)s - %(funcName)s(): %(message)s', level=logging.INFO)
 
-ENV_DAEMON = os.environ.get('DAEMON')
+ENV_PORT = os.environ.get('PORT')
 ENV_SSH_HOST = os.environ.get('SSH_HOST')
 ENV_SSH_PORT = os.environ.get('SSH_PORT')
 ENV_SSH_USER = os.environ.get('SSH_USER')
 ENV_SSH_PASS = os.environ.get('SSH_PASS')
 ENV_SSH_KEYFILE = os.environ.get('SSH_KEYFILE')
-ENV_SSH_TIMEZONE_OFFSET = os.environ.get('SSH_TIMEZONE_OFFSET')
-ENV_PORT = os.environ.get('PORT')
+ENV_REMOTE_TIMEZONE_OFFSET = os.environ.get('REMOTE_TIMEZONE_OFFSET')
+ENV_REMOTE_TEXTFILE_PATH = os.environ.get('REMOTE_TEXTFILE_PATH')
+
 
 ssh_client = paramiko.SSHClient()
 
@@ -39,6 +40,8 @@ THIS_METRICS = {
     'name': '',
     'text': '',
 }
+
+REMOTE_TEXTFILE_PATH = (ENV_REMOTE_TEXTFILE_PATH or '').rstrip('/')
 
 PREREAD_FILELIST = [
     '/etc/storage/system_time',
@@ -89,6 +92,8 @@ def do_exec_command(cmd, redirect_stderr=False):
 
 def do_preread():
     cmd = '/bin/fgrep "" ' + ' '.join(PREREAD_FILELIST)
+    if REMOTE_TEXTFILE_PATH:
+        cmd += ' %s/*.prom' % REMOTE_TEXTFILE_PATH
     output = do_exec_command(cmd)
     lines = output.splitlines(True)
     PREREAD_FILES.clear()
@@ -129,8 +134,8 @@ def collect_time():
     if rtc:
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
-        if ENV_SSH_TIMEZONE_OFFSET:
-            ts += int(ENV_SSH_TIMEZONE_OFFSET) * 60
+        if ENV_REMOTE_TIMEZONE_OFFSET:
+            ts += int(ENV_REMOTE_TIMEZONE_OFFSET) * 60
     elif system_time:
         ts = float(system_time)
     else:
@@ -290,6 +295,14 @@ def collect_filesystem():
             print_metric('device="%(device)s",fstype="%(fstype)s",mountpoint="%(mountpoint)s"' % info, int(info.get(suffix, 0)))
 
 
+def collect_textfile():
+    if not REMOTE_TEXTFILE_PATH:
+        return
+    for path, text in PREREAD_FILES.items():
+        if path.startswith(REMOTE_TEXTFILE_PATH + '/'):
+            THIS_METRICS['text'] += text.strip('\n') + '\n'
+
+
 def collect_all():
     THIS_METRICS['text'] = ''
     if ssh_client.get_transport() is None:
@@ -305,6 +318,7 @@ def collect_all():
     collect_netstat()
     collect_netdev()
     collect_diskstats()
+    collect_textfile()
     # collect_filesystem()
     return THIS_METRICS['text']
 
@@ -320,9 +334,6 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 def main():
     port = int(ENV_PORT or '9101')
-    if ENV_DAEMON:
-        libc = ctypes.CDLL(ctypes.util.find_library('c'))
-        libc.daemon(1, 0)
     if setproctitle:
         setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listen on %d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
     logging.info('Serving HTTP on 0.0.0.0 port %d ...', port)

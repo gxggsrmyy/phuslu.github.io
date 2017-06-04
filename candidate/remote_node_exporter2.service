@@ -9,7 +9,7 @@ Environment="SSH_HOST=192.168.2.1"
 Environment="SSH_USER=admin"
 Environment="SSH_PASSWORD=123456"
 Environment="SSH_KEYFILE=/home/phuslu/.ssh/id_rsa"
-Environment="SSH_TIMEZONE_OFFSET=480"
+Environment="REMOTE_TIMEZONE_OFFSET=480"
 #ExecStartPre=/sbin/setcap cap_net_bind_service=+ep /usr/bin/python
 #ExecStartPre=/bin/mkdir -p ./log ./data
 ExecStart=/bin/bash -c 'exec ./remote_node_exporter.py &>> /dev/null'
