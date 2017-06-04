@@ -19,6 +19,7 @@ import time
 try:
     import setproctitle
 except ImportError:
+    print('Warnning: python-setproctitle is not installed')
     setproctitle = None
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] process@%(process)s thread@%(thread)s %(filename)s@%(lineno)s - %(funcName)s(): %(message)s', level=logging.INFO)
@@ -33,10 +34,11 @@ ENV_SSH_TIMEZONE_OFFSET = os.environ.get('SSH_TIMEZONE_OFFSET')
 ENV_PORT = os.environ.get('PORT')
 
 ssh_client = paramiko.SSHClient()
-this_metric = ''
-this_text = ''
 
-libc = ctypes.CDLL(ctypes.util.find_library('c'))
+THIS_METRICS = {
+    'name': '',
+    'text': '',
+}
 
 PREREAD_FILES = {}
 PREREAD_FILELIST = [
@@ -58,7 +60,6 @@ PREREAD_FILELIST = [
 
 
 def do_connect():
-    global ssh_client
     host = ENV_SSH_HOST
     port = int(ENV_SSH_PORT or '22')
     username = ENV_SSH_USER
@@ -87,11 +88,10 @@ def do_exec_command(cmd, redirect_stderr=False):
 
 
 def do_preread():
-    global PREREAD_FILES
     cmd = '/bin/fgrep "" ' + ' '.join(PREREAD_FILELIST)
     output = do_exec_command(cmd)
     lines = output.splitlines(True)
-    PREREAD_FILES = {}
+    PREREAD_FILES.clear()
     for line in lines:
         name, value = line.split(':', 1)
         PREREAD_FILES[name] = PREREAD_FILES.setdefault(name, '') + value
@@ -105,22 +105,20 @@ def read_file(filename):
 
 
 def print_metric_type(metric, mtype):
-    global this_metric, this_text
-    this_metric = metric
-    this_text += '# TYPE %s %s\n' % (metric, mtype)
+    THIS_METRICS['name'] = metric
+    THIS_METRICS['text'] += '# TYPE %s %s\n' % (metric, mtype)
 
 
 def print_metric(labels, value):
     assert isinstance(value, (int, float))
-    global this_metric, this_text
-    if isinstance(value, float) or value >= 1000000:
+    if value >= 1000000:
         value = '%e' % value
     else:
         value = str(value)
     if labels:
-        this_text += '%s{%s} %s\n' % (this_metric, labels, value)
+        THIS_METRICS['text'] += '%s{%s} %s\n' % (THIS_METRICS['name'], labels, value)
     else:
-        this_text += '%s %s\n' % (this_metric, value)
+        THIS_METRICS['text'] += '%s %s\n' % (THIS_METRICS['name'], value)
 
 
 def collect_time():
@@ -295,8 +293,7 @@ def collect_filesystem():
 
 
 def collect_all():
-    global this_text
-    this_text = ''
+    THIS_METRICS['text'] = ''
     if ssh_client is None:
         do_connect()
     do_preread()
@@ -311,7 +308,7 @@ def collect_all():
     collect_netdev()
     collect_diskstats()
     # collect_filesystem()
-    return this_text
+    return THIS_METRICS['text']
 
 
 class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -326,6 +323,7 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 def main():
     port = int(ENV_PORT or '9101')
     if ENV_DAEMON:
+        libc = ctypes.CDLL(ctypes.util.find_library('c'))
         libc.daemon(1, 0)
     if setproctitle:
         setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listen on %d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
