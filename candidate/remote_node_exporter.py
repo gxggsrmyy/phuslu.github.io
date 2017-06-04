@@ -50,11 +50,14 @@ PREREAD_FILELIST = [
     '/proc/loadavg',
     '/proc/meminfo',
     '/proc/mounts',
+    '/proc/net/arp',
     '/proc/net/dev',
     '/proc/net/netstat',
     '/proc/net/snmp',
+    '/proc/net/sockstat',
     '/proc/stat',
     '/proc/sys/fs/file-nr',
+    '/proc/sys/kernel/random/entropy_avail',
     '/proc/sys/net/netfilter/nf_conntrack_count',
     '/proc/sys/net/netfilter/nf_conntrack_max',
     '/proc/vmstat',
@@ -99,7 +102,7 @@ def do_preread():
     PREREAD_FILES.clear()
     for line in lines:
         name, value = line.split(':', 1)
-        PREREAD_FILES[name] = PREREAD_FILES.setdefault(name, '') + value
+        PREREAD_FILES[name] = PREREAD_FILES.get(name, '') + value
 
 
 def read_file(filename):
@@ -194,6 +197,16 @@ def collect_netstat():
             print_metric(None, int(values[ii]))
 
 
+def collect_sockstat():
+    sockstat = read_file('/proc/net/sockstat').splitlines()
+    for line in sockstat:
+        prefix, statline = line.split(':')
+        prefix = prefix.strip()
+        for stat, count in re.findall(r'(\w+) (\d+)', statline):
+            print_metric_type('node_sockstat_%s_%s' % (prefix, stat), 'gauge')
+            print_metric(None, int(count))
+
+
 def collect_vmstat():
     vmstat = read_file('/proc/vmstat').splitlines()
     for vm in vmstat:
@@ -240,6 +253,25 @@ def collect_netdev():
         print_metric_type('node_network_%s_%s' % (inter, faces[i]), 'gauge')
         for ii, value in enumerate(devices):
             print_metric('device="%s"' % value, int(statss[ii][i]))
+
+
+def collect_arp():
+    arp = read_file('/proc/net/arp').splitlines()
+    arp.pop(0)
+    offset = -1
+    devices = {}
+    for line in arp:
+        device = line.strip().split()[offset]
+        devices[device] = devices.get(device, 0) + 1
+    print_metric_type('node_arp_entries', 'gauge', 'ARP entries by device')
+    for device, count in devices.items():
+        print_metric('device="%s"' % device, count)
+
+
+def collect_entropy():
+    entropy_avail = read_file('/proc/sys/kernel/random/entropy_avail').strip()
+    print_metric_type('node_entropy_available_bits', 'gauge', 'Bits of available entropy')
+    print_metric(None, int(entropy_avail))
 
 
 def collect_diskstats():
@@ -316,9 +348,12 @@ def collect_all():
     collect_filefd()
     collect_nf_conntrack()
     collect_netstat()
+    collect_sockstat()
     collect_netdev()
     collect_diskstats()
     collect_textfile()
+    collect_arp()
+    collect_entropy()
     # collect_filesystem()
     return THIS_METRICS['text']
 
