@@ -66,8 +66,7 @@ def do_connect():
     username = ENV_SSH_USER
     password = ENV_SSH_PASS
     keyfile = ENV_SSH_KEYFILE
-    if ssh_client.get_transport() is None:
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
     ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True)
     ssh_client.get_transport().set_keepalive(60)
 
@@ -105,8 +104,10 @@ def read_file(filename):
         return do_exec_command('/bin/cat ' + filename)
 
 
-def print_metric_type(metric, mtype):
+def print_metric_type(metric, mtype, mhelp=''):
     THIS_METRICS['name'] = metric
+    if mhelp:
+        THIS_METRICS['text'] += '# HELP %s %s.\n' % (metric, mhelp)
     THIS_METRICS['text'] += '# TYPE %s %s\n' % (metric, mtype)
 
 
@@ -134,25 +135,21 @@ def collect_time():
         ts = float(system_time)
     else:
         ts = float(do_exec_command('date +%s').strip() or '0')
-    print_metric_type('node_time', 'counter')
+    print_metric_type('node_time', 'counter', 'System time in seconds since epoch (1970)')
     print_metric(None, ts)
 
 
 def collect_loadavg():
     loadavg = read_file('/proc/loadavg').strip().split()
-    print_metric_type('node_load1', 'gauge')
+    print_metric_type('node_load1', 'gauge', '1m load average')
     print_metric(None, float(loadavg[0]))
-    print_metric_type('node_load15', 'gauge')
-    print_metric(None, float(loadavg[2]))
-    print_metric_type('node_load5', 'gauge')
-    print_metric(None, float(loadavg[1]))
 
 
 def collect_filefd():
     file_nr = read_file('/proc/sys/fs/file-nr').split()
-    print_metric_type('node_filefd_allocated', 'gauge')
+    print_metric_type('node_filefd_allocated', 'gauge', 'File descriptor statistics: allocated')
     print_metric(None, int(file_nr[0]))
-    print_metric_type('node_filefd_maximum', 'gauge')
+    print_metric_type('node_filefd_maximum', 'gauge', 'File descriptor statistics: maximum')
     print_metric(None, int(file_nr[2]))
 
 
@@ -160,10 +157,10 @@ def collect_nf_conntrack():
     nf_conntrack_count = read_file('/proc/sys/net/netfilter/nf_conntrack_count').strip()
     nf_conntrack_max = read_file('/proc/sys/net/netfilter/nf_conntrack_max').strip()
     if nf_conntrack_count:
-        print_metric_type('node_nf_conntrack_entries', 'gauge')
+        print_metric_type('node_nf_conntrack_entries', 'gauge', 'Number of currently allocated flow entries for connection tracking')
         print_metric(None, int(nf_conntrack_count))
     if nf_conntrack_max:
-        print_metric_type('node_nf_conntrack_entries_limit', 'gauge')
+        print_metric_type('node_nf_conntrack_entries_limit', 'gauge', 'Maximum size of connection tracking table')
         print_metric(None, int(nf_conntrack_max))
 
 
@@ -203,19 +200,19 @@ def collect_vmstat():
 def collect_stat():
     cpu_mode = 'user nice system idle iowait irq softirq steal guest guest_nice'.split()
     stat = read_file('/proc/stat')
-    print_metric_type('node_boot_time', 'gauge')
+    print_metric_type('node_boot_time', 'gauge', 'Node boot time, in unixtime')
     print_metric(None, int(re.search(r'btime ([0-9]+)', stat).group(1)))
-    print_metric_type('node_context_switches', 'counter')
+    print_metric_type('node_context_switches', 'counter', 'Total number of context switches')
     print_metric(None, int(re.search(r'ctxt ([0-9]+)', stat).group(1)))
-    print_metric_type('node_forks', 'counter')
+    print_metric_type('node_forks', 'counter', 'Total number of forks')
     print_metric(None, int(re.search(r'processes ([0-9]+)', stat).group(1)))
-    print_metric_type('node_intr', 'counter')
+    print_metric_type('node_intr', 'counter', 'Total number of interrupts serviced')
     print_metric(None, int(re.search(r'intr ([0-9]+)', stat).group(1)))
-    print_metric_type('node_procs_blocked', 'gauge')
+    print_metric_type('node_procs_blocked', 'gauge', 'Number of processes blocked waiting for I/O to complete')
     print_metric(None, int(re.search(r'procs_blocked ([0-9]+)', stat).group(1)))
-    print_metric_type('node_procs_running', 'gauge')
+    print_metric_type('node_procs_running', 'gauge', 'Number of processes in runnable state')
     print_metric(None, int(re.search(r'procs_running ([0-9]+)', stat).group(1)))
-    print_metric_type('node_cpu', 'counter')
+    print_metric_type('node_cpu', 'counter', 'Seconds the cpus spent in each mode')
     cpulines = re.findall(r'(?m)cpu\d+ .+', stat)
     for i, line in enumerate(cpulines):
         cpu = line.split()[1:]
@@ -295,7 +292,7 @@ def collect_filesystem():
 
 def collect_all():
     THIS_METRICS['text'] = ''
-    if ssh_client is None:
+    if ssh_client.get_transport() is None:
         do_connect()
     do_preread()
     collect_time()
