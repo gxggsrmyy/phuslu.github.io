@@ -40,7 +40,6 @@ THIS_METRICS = {
     'text': '',
 }
 
-PREREAD_FILES = {}
 PREREAD_FILELIST = [
     '/etc/storage/system_time',
     '/proc/diskstats',
@@ -57,6 +56,8 @@ PREREAD_FILELIST = [
     '/proc/sys/net/netfilter/nf_conntrack_max',
     '/proc/vmstat',
 ]
+
+PREREAD_FILES = dict.fromkeys(PREREAD_FILELIST, '')
 
 
 def do_connect():
