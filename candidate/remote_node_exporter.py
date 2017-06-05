@@ -370,7 +370,7 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 def main():
     port = int(ENV_PORT or '9101')
     if setproctitle:
-        setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listening :%d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
+        setproctitle.setproctitle('remote_node_exporter: listen :%d [%s@%s]' % (port, ENV_SSH_USER, ENV_SSH_HOST))
     logging.info('Serving HTTP on 0.0.0.0 port %d ...', port)
     BaseHTTPServer.HTTPServer(('', port), MetricsHandler).serve_forever()
 
