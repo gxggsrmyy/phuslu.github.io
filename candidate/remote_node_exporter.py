@@ -67,15 +67,22 @@ PREREAD_FILES = dict.fromkeys(PREREAD_FILELIST, '')
 
 
 def do_connect():
+    global ssh_client
     host = ENV_SSH_HOST
     port = int(ENV_SSH_PORT or '22')
     username = ENV_SSH_USER
     password = ENV_SSH_PASS
     keyfile = ENV_SSH_KEYFILE
-    ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-    ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True, timeout=8)
-    ssh_client.get_transport().set_keepalive(60)
-    THIS_METRICS['timezone_offset'] = None
+    try:
+        if ssh_client.get_transport() is not None:
+            ssh_client.close()
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
+        ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True, timeout=8)
+        ssh_client.get_transport().set_keepalive(60)
+        THIS_METRICS['timezone_offset'] = None
+    except (paramiko.SSHException, StandardError) as e:
+        logging.error('do_connect(%r, %d, %r) error: %s', host, port, username, e)
 
 
 def do_exec_command(cmd, redirect_stderr=False):
