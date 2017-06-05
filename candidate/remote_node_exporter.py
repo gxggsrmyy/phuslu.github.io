@@ -30,13 +30,13 @@ ENV_SSH_PORT = os.environ.get('SSH_PORT')
 ENV_SSH_USER = os.environ.get('SSH_USER')
 ENV_SSH_PASS = os.environ.get('SSH_PASS')
 ENV_SSH_KEYFILE = os.environ.get('SSH_KEYFILE')
-ENV_REMOTE_TIMEZONE_OFFSET = os.environ.get('REMOTE_TIMEZONE_OFFSET')
 ENV_REMOTE_TEXTFILE_PATH = os.environ.get('REMOTE_TEXTFILE_PATH')
 
 
 ssh_client = paramiko.SSHClient()
 
 THIS_METRICS = {
+    'timezone_offset': None,
     'name': '',
     'text': '',
 }
@@ -137,8 +137,11 @@ def collect_time():
     if rtc:
         info = dict(re.split(r'\s*:\s*', line, maxsplit=1) for line in rtc.splitlines())
         ts = time.mktime(time.strptime('%(rtc_date)s %(rtc_time)s' % info, '%Y-%m-%d %H:%M:%S'))
-        if ENV_REMOTE_TIMEZONE_OFFSET:
-            ts += int(ENV_REMOTE_TIMEZONE_OFFSET) * 60
+        if THIS_METRICS['timezone_offset'] is None:
+            timezone = do_exec_command('date +%z').strip() or '+0000'
+            timezone_offset = int('%s%d' %(timezone[0], int(timezone[1:3], 10) * 60 + int(timezone[-2:])))
+            THIS_METRICS['timezone_offset'] = timezone_offset
+        ts += THIS_METRICS['timezone_offset'] * 60
     elif system_time:
         ts = float(system_time)
     else:
