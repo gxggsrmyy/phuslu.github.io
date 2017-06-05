@@ -73,7 +73,7 @@ def do_connect():
     password = ENV_SSH_PASS
     keyfile = ENV_SSH_KEYFILE
     ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-    ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True)
+    ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True, timeout=8)
     ssh_client.get_transport().set_keepalive(60)
 
 
@@ -370,7 +370,7 @@ class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 def main():
     port = int(ENV_PORT or '9101')
     if setproctitle:
-        setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listen on %d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
+        setproctitle.setproctitle('remote_node_exporter.py [%s@%s], listening :%d' % (ENV_SSH_USER, ENV_SSH_HOST, port))
     logging.info('Serving HTTP on 0.0.0.0 port %d ...', port)
     BaseHTTPServer.HTTPServer(('', port), MetricsHandler).serve_forever()
 
