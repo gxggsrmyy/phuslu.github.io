@@ -75,6 +75,7 @@ def do_connect():
     ssh_client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
     ssh_client.connect(host, port=int(port), username=username, password=password, key_filename=keyfile, compress=True, timeout=8)
     ssh_client.get_transport().set_keepalive(60)
+    THIS_METRICS['timezone_offset'] = None
 
 
 def do_exec_command(cmd, redirect_stderr=False):
