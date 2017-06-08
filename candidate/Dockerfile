@@ -1,10 +1,11 @@
 # see https://hub.docker.com/r/phuslu/alpine/
 
-FROM alpine:3.5
+FROM alpine:3.6
 RUN \
+  sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
   apk update && \
   apk upgrade && \
-  apk add \
+  apk add --update --no-cache \
     bash \
     curl \
     dcron \
@@ -14,6 +15,7 @@ RUN \
     openssh-client \
     openssh-sftp-server \
     openssl \
+    tzdata \
     procps \
     rsyslog \
     shadow \
