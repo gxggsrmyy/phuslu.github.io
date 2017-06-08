@@ -26,12 +26,26 @@ RUN \
   # fake glibc for go binaries
   mkdir /lib64 && \
   ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2 && \
+  # add /etc/init.d/timezone
+  echo $'#!/sbin/openrc-run\n\
+description="Sets the timezone of of the machine"\n\
+start()\n\
+{\n\
+	if test -n "$TZ" ; then\n\
+		ln -sf /usr/share/zoneinfo/$TZ /etc/localtime\n\
+		echo "$TZ" >  /etc/timezone\n\
+	fi\n\
+	return 0\n\
+}\n'\
+> /etc/init.d/timezone && \
+  chmod +x /etc/init.d/timezone && \
   # hack openrc for docker
+  sed -i 's/#rc_sys=""/rc_sys="docker"/g' /etc/rc.conf && \
+  sed -i 's/^#\(rc_logger="YES"\)$/\1/' /etc/rc.conf && \
+  echo 'rc_provide="loopback net"' >> /etc/rc.conf && \
+  echo 'rc_env_allow="*"' >>/etc/rc.conf && \
   sed -i '/tty/d' /etc/inittab && \
   echo 'null::respawn:/usr/bin/tail -f /dev/null' >> /etc/inittab && \
-  sed -i 's/#rc_sys=""/rc_sys="docker"/g' /etc/rc.conf && \
-  echo 'rc_provide="loopback net"' >> /etc/rc.conf && \
-  sed -i 's/^#\(rc_logger="YES"\)$/\1/' /etc/rc.conf && \
   sed -i 's/hostname $opts/# hostname $opts/g' /etc/init.d/hostname && \
   sed -i 's/mount -t tmpfs/# mount -t tmpfs/g' /lib/rc/sh/init.sh && \
   sed -i 's/cgroup_add_service /# cgroup_add_service /g' /lib/rc/sh/openrc-run.sh && \
@@ -41,6 +55,7 @@ RUN \
         /etc/init.d/modules-load \
         /etc/init.d/modloop && \
   # add auto-start services
+  rc-update add timezone default && \
   rc-update add rsyslog default && \
   rc-update add dcron default && \
   rc-update add dropbear default && \
