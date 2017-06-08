@@ -10,15 +10,15 @@ RUN \
     curl \
     dcron \
     dropbear \
+    iproute2 \
     logrotate \
     openrc \
     openssh-client \
     openssh-sftp-server \
     openssl \
-    tzdata \
     procps \
     rsyslog \
-    shadow \
+    tzdata \
     xz && \
   rm -rf /var/cache/apk/* && \
   # add lastlog
