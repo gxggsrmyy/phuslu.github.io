@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>README</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<div class="container" style="min-width: 392px; max-width: 60%">
+<table class="table table-striped table-bordered table-condensed">
+  <tr><th colspan="3">README</th></tr>
+  <tr><td colspan="3">
+    <div id="readme" class="markdown-body"><h1>Depoly</h1>
+<pre><code>docker run -d -p 3000:3000 --restart always --log-opt max-size=100m --log-opt max-file=2 -v $(pwd)/grafana.ini:/etc/grafana/grafana.ini -e "GF_SECURITY_ADMIN_PASSWORD=123456" --name grafana grafana/grafana
+</code></pre>
+</div>
+  </td></tr>
+</table>
+<link href="https://cdn.bootcss.com/github-markdown-css/2.6.0/github-markdown.min.css" rel="stylesheet">
+<style>
+.markdown-body {
+  float: left;
+  font-family: "ubuntu", "Tahoma", "Microsoft YaHei", arial,sans-serif;
+}
+</style>
+</div>
