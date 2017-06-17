@@ -1,0 +1,12 @@
+[Unit]
+Description=consul
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'exec ./consul agent -server -ui -node=$(hostname) -bind=$(hostname -i) -data-dir=$(pwd)/data/ -config-dir=$(pwd)/config/ -advertise=$(hostname -i) -recursor=8.8.8.8 -dns-port=53 -client=0.0.0.0 &>> $(pwd)/log/consul.log'
+WorkingDirectory=/opt/consul
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

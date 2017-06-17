@@ -1,0 +1,38 @@
+
+server_names_hash_bucket_size 128;
+
+server {
+  listen 80 default_server;
+
+  location / {
+    return 404;
+  }
+}
+
+server {
+  listen 80;
+  server_name consul-ui.phus.lu;
+
+  location / {
+    proxy_pass http://127.0.0.1:8500;
+  }
+}
+
+{{range services}} {{$name := .Name}} {{$service := service .Name}}
+upstream {{$name}} {
+  zone upstream-{{$name}} 64k;
+  {{range $service}}server {{.Address}}:{{.Port}} max_fails=3 fail_timeout=60 weight=1;
+  {{else}}server 127.0.0.1:65535; # force a 502{{end}}
+} {{end}}
+
+{{range services}} {{$name := .Name}}
+server {
+  listen 80;
+  server_name {{$name}}.phus.lu;
+
+  location / {
+    proxy_pass http://{{$name}};
+  }
+}
+{{end}}
+

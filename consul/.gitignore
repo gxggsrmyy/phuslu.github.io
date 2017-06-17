@@ -1,0 +1,6 @@
+consul
+consul-template
+consul-cli
+run/
+data/
+*.log
